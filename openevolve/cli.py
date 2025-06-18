@@ -7,7 +7,22 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional
+
+# 加载.env文件
+try:
+    from dotenv import load_dotenv
+    # 查找项目根目录的.env文件
+    current_dir = Path.cwd()
+    env_file = current_dir / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+        print(f"✅ 已加载环境变量文件: {env_file}")
+except ImportError:
+    pass  # python-dotenv 未安装，跳过
+except Exception as e:
+    print(f"⚠️  加载.env文件时出错: {e}")
 
 from openevolve import OpenEvolve
 from openevolve.config import Config, load_config

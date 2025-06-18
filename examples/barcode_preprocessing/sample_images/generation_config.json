@@ -1,0 +1,80 @@
+{
+  "timestamp": "20250618_104019",
+  "output_dir": "sample_images/auto_20250618_104019",
+  "count": 3,
+  "distortion_level": 1.0,
+  "include_qr": true,
+  "include_code128": true,
+  "include_code39": true,
+  "noise_types": [
+    [
+      "clean",
+      null,
+      0
+    ],
+    [
+      "blurred",
+      "gaussian_blur",
+      0.8
+    ],
+    [
+      "noisy",
+      "gaussian_noise",
+      0.6
+    ],
+    [
+      "rotated",
+      "rotation",
+      0.8
+    ]
+  ],
+  "total_base_codes": 9,
+  "created_images": [
+    "clean_qr_01_https:__ex.png",
+    "blurred_qr_01_https:__ex.png",
+    "noisy_qr_01_https:__ex.png",
+    "rotated_qr_01_https:__ex.png",
+    "combined_qr_01_https:__ex.png",
+    "clean_qr_02_Hello-Worl.png",
+    "blurred_qr_02_Hello-Worl.png",
+    "noisy_qr_02_Hello-Worl.png",
+    "rotated_qr_02_Hello-Worl.png",
+    "combined_qr_02_Hello-Worl.png",
+    "clean_qr_03_Test-QR-Co.png",
+    "blurred_qr_03_Test-QR-Co.png",
+    "noisy_qr_03_Test-QR-Co.png",
+    "rotated_qr_03_Test-QR-Co.png",
+    "combined_qr_03_Test-QR-Co.png",
+    "clean_code128_01_1234567890.png",
+    "blurred_code128_01_1234567890.png",
+    "noisy_code128_01_1234567890.png",
+    "rotated_code128_01_1234567890.png",
+    "combined_code128_01_1234567890.png",
+    "clean_code128_02_HELLO-WORL.png",
+    "blurred_code128_02_HELLO-WORL.png",
+    "noisy_code128_02_HELLO-WORL.png",
+    "rotated_code128_02_HELLO-WORL.png",
+    "combined_code128_02_HELLO-WORL.png",
+    "clean_code128_03_TEST-BARCO.png",
+    "blurred_code128_03_TEST-BARCO.png",
+    "noisy_code128_03_TEST-BARCO.png",
+    "rotated_code128_03_TEST-BARCO.png",
+    "combined_code128_03_TEST-BARCO.png",
+    "clean_code39_01_123456789.png",
+    "blurred_code39_01_123456789.png",
+    "noisy_code39_01_123456789.png",
+    "rotated_code39_01_123456789.png",
+    "combined_code39_01_123456789.png",
+    "clean_code39_02_HELLO-WORL.png",
+    "blurred_code39_02_HELLO-WORL.png",
+    "noisy_code39_02_HELLO-WORL.png",
+    "rotated_code39_02_HELLO-WORL.png",
+    "combined_code39_02_HELLO-WORL.png",
+    "clean_code39_03_TEST-CODE3.png",
+    "blurred_code39_03_TEST-CODE3.png",
+    "noisy_code39_03_TEST-CODE3.png",
+    "rotated_code39_03_TEST-CODE3.png",
+    "combined_code39_03_TEST-CODE3.png"
+  ],
+  "total_created": 45
+}

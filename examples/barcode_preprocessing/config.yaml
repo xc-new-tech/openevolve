@@ -1,0 +1,116 @@
+# Configuration for barcode image preprocessing evolution
+# Target: Evolve image preprocessing pipeline to improve barcode decoding success rate
+
+# General settings
+max_iterations: 20
+checkpoint_interval: 5
+log_level: "INFO"
+
+# LLM configuration
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 12000
+  timeout: 120
+  models:
+    - name: "openai/gpt-4.1"
+      weight: 0.7
+    - name: "anthropic/claude-sonnet-4"
+      weight: 0.3
+
+# Prompt configuration
+prompt:
+  system_message: |
+    You are an expert in computer vision and image processing, specializing in barcode recognition and preprocessing techniques. Your task is to improve an image preprocessing pipeline that enhances damaged, blurry, or distorted barcode images to make them readable by standard decoding libraries like pyzbar or zxing.
+
+    Key image processing insights:
+    - Noise reduction techniques: Gaussian blur, median filtering, morphological operations
+    - Image enhancement: histogram equalization, contrast adjustment, gamma correction
+    - Geometric corrections: perspective transformation, rotation correction, skew correction
+    - Binarization methods: adaptive thresholding, Otsu's method, local thresholding
+    - Edge detection and contour analysis for barcode region extraction
+    - Proper preprocessing order matters: noise reduction → enhancement → geometric correction → binarization
+
+    Focus on creating a robust preprocessing pipeline that can handle various types of barcode image degradation including blur, noise, perspective distortion, lighting variations, and partial occlusion.
+  num_top_programs: 5
+  use_template_stochasticity: true
+
+# Database configuration
+database:
+  population_size: 8
+  archive_size: 30
+  num_islands: 3
+  elite_selection_ratio: 0.2
+  exploitation_ratio: 0.6
+
+# Evaluator configuration
+evaluator:
+  timeout: 60
+  max_retries: 2
+  cascade_evaluation: true
+  cascade_thresholds: [0.2, 0.5]
+  parallel_evaluations: 4
+  use_llm_feedback: false
+
+# Evolution settings
+diff_based_evolution: false
+allow_full_rewrites: true
+
+# OpenEvolve Configuration for Barcode Preprocessing
+# 优化配置：增强精英保存和稳定性机制
+
+# 强化精英保存机制
+elitism:
+  enabled: true
+  elite_size: 3  # 保存前3名精英
+  elite_preservation_ratio: 0.5  # 50%的精英在每代中保持不变
+  score_threshold: 80.0  # 只有得分>80的程序才能成为精英
+
+# 改进的选择和评估机制
+selection:
+  tournament_size: 3
+  pressure: 0.8  # 增加选择压力，偏向高分程序
+  
+evaluation:
+  timeout: 60  # 增加超时时间避免好程序被误杀
+  retries: 2   # 失败重试机制
+  stability_check: true  # 启用稳定性检查
+  
+# 变异和交叉参数优化
+mutation:
+  rate: 0.3  # 适中的变异率
+  strength: 0.7  # 中等强度变异，避免过度破坏
+  
+crossover:
+  rate: 0.6  # 增加交叉率促进优秀特征组合
+  
+# 检查点和日志配置
+checkpointing:
+  enabled: true
+  interval: 5  # 每5代保存一次
+  keep_best_always: true  # 始终保留历史最佳
+  backup_elite: true  # 备份精英程序
+  
+logging:
+  level: "INFO"
+  detailed_metrics: true
+  save_all_programs: true  # 保存所有程序用于后续分析
+  
+# 终止条件
+termination:
+  max_generations_without_improvement: 10  # 10代无改进则停止
+  target_score: 98.0  # 目标分数
+  convergence_threshold: 0.01  # 收敛阈值
+
+# 特定于条形码预处理的配置
+domain_specific:
+  image_preprocessing: true
+  multi_metric_evaluation: true
+  type_aware_scoring: true  # 按条形码类型评分
+  
+# 实验和调试选项
+experimental:
+  adaptive_parameters: true  # 自适应参数调整
+  diversity_maintenance: true  # 维持种群多样性
+  performance_tracking: true  # 性能轨迹跟踪 

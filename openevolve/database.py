@@ -533,24 +533,85 @@ class ProgramDatabase:
             logger.debug(f"Set initial best program to {program.id}")
             return
 
-        # Compare with current best program
-        current_best = self.programs[self.best_program_id]
+        # Get current best program
+        current_best = self.programs.get(self.best_program_id)
+        
+        # If current best program was removed from database, we need to find a new best
+        if current_best is None:
+            logger.warning(f"Best program {self.best_program_id} was removed from database, recalculating best")
+            # Force recalculation of best program
+            real_best = self.get_best_program()
+            if real_best:
+                self.best_program_id = real_best.id
+                current_best = real_best
+                logger.info(f"Recalculated best program: {self.best_program_id}")
 
-        # Update if the new program is better
-        if self._is_better(program, current_best):
-            old_id = self.best_program_id
-            self.best_program_id = program.id
-
-            # Log the change
-            if "combined_score" in program.metrics and "combined_score" in current_best.metrics:
+        # Compare with current best program (only update if significantly better)
+        if current_best and self._is_better(program, current_best):
+            # Extra validation: ensure this is REALLY better using combined_score
+            if ("combined_score" in program.metrics and 
+                "combined_score" in current_best.metrics):
+                
                 old_score = current_best.metrics["combined_score"]
                 new_score = program.metrics["combined_score"]
-                score_diff = new_score - old_score
-                logger.info(
-                    f"New best program {program.id} replaces {old_id} (combined_score: {old_score:.4f} → {new_score:.4f}, +{score_diff:.4f})"
-                )
+                
+                # Only update if significantly better (avoid noise)
+                if new_score > old_score + 0.001:  # Small threshold to avoid float precision issues
+                    old_id = self.best_program_id
+                    self.best_program_id = program.id
+                    score_diff = new_score - old_score
+                    logger.info(
+                        f"New best program {program.id} replaces {old_id} (combined_score: {old_score:.4f} → {new_score:.4f}, +{score_diff:.4f})"
+                    )
+                else:
+                    logger.debug(f"Program {program.id} score {new_score:.4f} not significantly better than current best {old_score:.4f}")
             else:
-                logger.info(f"New best program {program.id} replaces {old_id}")
+                # Fallback comparison if no combined_score
+                old_id = self.best_program_id
+                self.best_program_id = program.id
+                logger.info(f"New best program {program.id} replaces {old_id} (no combined_score comparison)")
+        elif current_best:
+            # Log why we didn't update
+            if ("combined_score" in program.metrics and 
+                "combined_score" in current_best.metrics):
+                logger.debug(
+                    f"Program {program.id} (score: {program.metrics['combined_score']:.4f}) "
+                    f"not better than current best {self.best_program_id} "
+                    f"(score: {current_best.metrics['combined_score']:.4f})"
+                )
+    
+    def get_absolute_best_program(self) -> Optional[Program]:
+        """
+        Get the absolute best program by scanning all programs in database
+        This is a fallback method to ensure we never lose the real best program
+        
+        Returns:
+            The program with the highest combined_score, or best by other metrics
+        """
+        if not self.programs:
+            return None
+            
+        # First try to find best by combined_score
+        programs_with_combined = [
+            p for p in self.programs.values() 
+            if "combined_score" in p.metrics
+        ]
+        
+        if programs_with_combined:
+            best_program = max(
+                programs_with_combined,
+                key=lambda p: p.metrics["combined_score"]
+            )
+            logger.debug(f"Found absolute best program by combined_score: {best_program.id} (score: {best_program.metrics['combined_score']:.4f})")
+            return best_program
+            
+        # Fallback to best by average metrics
+        best_program = max(
+            self.programs.values(),
+            key=lambda p: safe_numeric_average(p.metrics)
+        )
+        logger.debug(f"Found absolute best program by average metrics: {best_program.id}")
+        return best_program
 
     def _sample_parent(self) -> Program:
         """

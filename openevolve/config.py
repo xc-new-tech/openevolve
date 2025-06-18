@@ -105,6 +105,21 @@ class LLMConfig(LLMModelConfig):
         for model in self.models + self.evaluator_models:
             for key, value in args.items():
                 if overwrite or getattr(model, key, None) is None:
+                    # Special handling for API key - get from environment if not set
+                    if key == "api_key" and value is None:
+                        import os
+                        # Try different environment variable names based on API base
+                        if hasattr(model, 'api_base') and model.api_base:
+                            if "openrouter" in model.api_base.lower():
+                                value = os.getenv("OPENROUTER_API_KEY")
+                            elif "anthropic" in model.api_base.lower():
+                                value = os.getenv("ANTHROPIC_API_KEY")
+                            elif "google" in model.api_base.lower() or "gemini" in model.api_base.lower():
+                                value = os.getenv("GOOGLE_API_KEY")
+                            else:
+                                value = os.getenv("OPENAI_API_KEY")
+                        else:
+                            value = os.getenv("OPENAI_API_KEY")
                     setattr(model, key, value)
 
 
@@ -211,6 +226,15 @@ class Config:
     log_dir: Optional[str] = None
     random_seed: Optional[int] = None
 
+    # Language configuration
+    language: str = "python"  # Options: "python", "c", "cpp", "c++"
+    
+    # C/C++ specific configuration
+    compiler: str = "auto"  # Options: "auto", "gcc", "g++", "clang", "clang++"
+    compile_flags: List[str] = field(default_factory=lambda: ["-O2", "-Wall", "-Wextra"])
+    compile_timeout: float = 10.0  # Seconds
+    run_timeout: float = 30.0      # Seconds
+
     # Component configurations
     llm: LLMConfig = field(default_factory=LLMConfig)
     prompt: PromptConfig = field(default_factory=PromptConfig)
@@ -221,6 +245,52 @@ class Config:
     diff_based_evolution: bool = True
     allow_full_rewrites: bool = False
     max_code_length: int = 10000
+
+    def __post_init__(self):
+        """Post-initialization validation and setup"""
+        # Validate language setting
+        valid_languages = ["python", "c", "cpp", "c++"]
+        if self.language not in valid_languages:
+            raise ValueError(f"Unsupported language: {self.language}. Must be one of {valid_languages}")
+        
+        # Normalize C++ language variants
+        if self.language in ["cpp", "c++"]:
+            self.language = "cpp"
+        
+        # Validate compiler for C/C++
+        if self.language in ["c", "cpp"]:
+            valid_compilers = ["auto", "gcc", "g++", "clang", "clang++"]
+            if self.compiler not in valid_compilers:
+                raise ValueError(f"Unsupported compiler: {self.compiler}. Must be one of {valid_compilers}")
+
+    def get_evaluator_class(self):
+        """Get the appropriate evaluator class for the configured language"""
+        if self.language in ["c", "cpp"]:
+            from openevolve.evaluator import CPPEvaluator
+            return CPPEvaluator
+        else:
+            from openevolve.evaluator import Evaluator 
+            return Evaluator
+
+    def get_evaluator_kwargs(self) -> Dict[str, Any]:
+        """Get language-specific kwargs for evaluator initialization"""
+        if self.language in ["c", "cpp"]:
+            return {
+                "compiler": self.compiler,
+                "compile_flags": self.compile_flags,
+                "timeout_compile": self.compile_timeout,
+                "timeout_run": self.run_timeout,
+            }
+        return {}
+
+    def get_file_extension(self) -> str:
+        """Get the appropriate file extension for the configured language"""
+        extensions = {
+            "python": ".py",
+            "c": ".c", 
+            "cpp": ".cpp"
+        }
+        return extensions.get(self.language, ".py")
 
     @classmethod
     def from_yaml(cls, path: Union[str, Path]) -> "Config":
@@ -268,6 +338,13 @@ class Config:
             "log_level": self.log_level,
             "log_dir": self.log_dir,
             "random_seed": self.random_seed,
+            # Language configuration
+            "language": self.language,
+            # C/C++ specific configuration
+            "compiler": self.compiler,
+            "compile_flags": self.compile_flags,
+            "compile_timeout": self.compile_timeout,
+            "run_timeout": self.run_timeout,
             # Component configurations
             "llm": {
                 "models": self.llm.models,

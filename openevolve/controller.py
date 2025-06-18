@@ -83,17 +83,25 @@ class OpenEvolve:
         # Load initial program
         self.initial_program_path = initial_program_path
         self.initial_program_code = self._load_initial_program()
-        self.language = extract_code_language(self.initial_program_code)
-
-        # Extract file extension from initial program
-        self.file_extension = os.path.splitext(initial_program_path)[1]
-        if not self.file_extension:
-            # Default to .py if no extension found
-            self.file_extension = ".py"
+        
+        # Use language from config, fallback to automatic detection if "auto"
+        if hasattr(self.config, 'language') and self.config.language != "auto":
+            self.language = self.config.language
         else:
-            # Make sure it starts with a dot
-            if not self.file_extension.startswith("."):
-                self.file_extension = f".{self.file_extension}"
+            self.language = extract_code_language(self.initial_program_code)
+
+        # Extract file extension from config or initial program
+        if hasattr(self.config, 'get_file_extension'):
+            self.file_extension = self.config.get_file_extension()
+        else:
+            self.file_extension = os.path.splitext(initial_program_path)[1]
+            if not self.file_extension:
+                # Default to .py if no extension found
+                self.file_extension = ".py"
+            else:
+                # Make sure it starts with a dot
+                if not self.file_extension.startswith("."):
+                    self.file_extension = f".{self.file_extension}"
 
         # Initialize components
         self.llm_ensemble = LLMEnsemble(self.config.llm.models)
@@ -109,11 +117,16 @@ class OpenEvolve:
 
         self.database = ProgramDatabase(self.config.database)
 
-        self.evaluator = Evaluator(
+        # Use language-specific evaluator class and kwargs from config
+        evaluator_class = self.config.get_evaluator_class()
+        evaluator_kwargs = self.config.get_evaluator_kwargs()
+        
+        self.evaluator = evaluator_class(
             self.config.evaluator,
             evaluation_file,
             self.llm_evaluator_ensemble,
             self.evaluator_prompt_sampler,
+            **evaluator_kwargs
         )
 
         logger.info(f"Initialized OpenEvolve with {initial_program_path} " f"and {evaluation_file}")
@@ -349,19 +362,60 @@ class OpenEvolve:
                 logger.error(f"Error in iteration {i+1}: {str(e)}")
                 continue
 
-        # Get the best program using our tracking mechanism
+        # Get the best program using our enhanced mechanism
         best_program = None
-        if self.database.best_program_id:
-            best_program = self.database.get(self.database.best_program_id)
-            logger.info(f"Using tracked best program: {self.database.best_program_id}")
+        
+        # Try multiple strategies to ensure we get the REAL best program
+        strategies = []
+        
+        # Strategy 1: Use tracked best program if available
+        if self.database.best_program_id and self.database.best_program_id in self.database.programs:
+            tracked_program = self.database.get(self.database.best_program_id)
+            if tracked_program:
+                strategies.append(("tracked", tracked_program))
+                logger.info(f"Found tracked best program: {self.database.best_program_id}")
+        
+        # Strategy 2: Use get_absolute_best_program (most reliable)
+        absolute_best = self.database.get_absolute_best_program()
+        if absolute_best:
+            strategies.append(("absolute", absolute_best))
+            logger.info(f"Found absolute best program: {absolute_best.id}")
+            
+        # Strategy 3: Calculate best program (fallback)
+        calculated_best = self.database.get_best_program()
+        if calculated_best:
+            strategies.append(("calculated", calculated_best))
+            logger.info(f"Found calculated best program: {calculated_best.id}")
+        
+        # Choose the best among all strategies
+        if strategies:
+            # Find the program with highest combined_score
+            best_strategy = None
+            best_score = -float('inf')
+            
+            for strategy_name, program in strategies:
+                if "combined_score" in program.metrics:
+                    score = program.metrics["combined_score"]
+                    logger.info(f"{strategy_name} program {program.id}: score = {score:.4f}")
+                    if score > best_score:
+                        best_score = score
+                        best_strategy = (strategy_name, program)
+                        
+            if best_strategy:
+                strategy_name, best_program = best_strategy
+                logger.info(f"Selected {strategy_name} program {best_program.id} as final best (score: {best_score:.4f})")
+            else:
+                # Fallback to first strategy if no combined_score
+                best_program = strategies[0][1]
+                logger.info(f"Using fallback program {best_program.id} (no combined_score available)")
 
-        # Fallback to calculating best program if tracked program not found
+        # Fallback to calculating best program if all strategies failed
         if best_program is None:
             best_program = self.database.get_best_program()
-            logger.info("Using calculated best program (tracked program not found)")
+            logger.warning("All best program strategies failed, using basic calculation")
 
         # Check if there's a better program by combined_score that wasn't tracked
-        if "combined_score" in best_program.metrics:
+        if best_program and "combined_score" in best_program.metrics:
             best_by_combined = self.database.get_best_program(metric="combined_score")
             if (
                 best_by_combined
@@ -486,13 +540,35 @@ class OpenEvolve:
         Args:
             program: Best program (if None, uses the tracked best program)
         """
-        # If no program is provided, use the tracked best program from the database
+        # If no program is provided, calculate the REAL best program across all history
         if program is None:
-            if self.database.best_program_id:
-                program = self.database.get(self.database.best_program_id)
-            else:
-                # Fallback to calculating best program if no tracked best program
-                program = self.database.get_best_program()
+            # Force calculation of the true best program instead of relying on tracking
+            program = self.database.get_best_program()
+            
+            # Double-check by scanning all programs to ensure we get the absolute best
+            all_programs = list(self.database.programs.values())
+            if all_programs:
+                # Find the program with the highest combined_score
+                best_by_combined = max(
+                    [p for p in all_programs if "combined_score" in p.metrics],
+                    key=lambda p: p.metrics["combined_score"],
+                    default=None
+                )
+                
+                # If we found a program and it's better than the current one, use it
+                if (best_by_combined 
+                    and program 
+                    and "combined_score" in best_by_combined.metrics 
+                    and "combined_score" in program.metrics
+                    and best_by_combined.metrics["combined_score"] > program.metrics["combined_score"]):
+                    logger.info(
+                        f"Found better program during save: {best_by_combined.id} "
+                        f"(score: {best_by_combined.metrics['combined_score']:.4f}) vs "
+                        f"{program.id} (score: {program.metrics['combined_score']:.4f})"
+                    )
+                    program = best_by_combined
+                elif best_by_combined and not program:
+                    program = best_by_combined
 
         if not program:
             logger.warning("No best program found to save")
@@ -528,4 +604,5 @@ class OpenEvolve:
                 indent=2,
             )
 
-        logger.info(f"Saved best program to {code_path} with program info to {info_path}")
+        logger.info(f"Saved REAL best program {program.id} to {code_path} with score {program.metrics.get('combined_score', 'N/A'):.4f}")
+        logger.info(f"Program info saved to {info_path}")

@@ -492,3 +492,280 @@ class Evaluator:
         ]
 
         return await asyncio.gather(*tasks)
+
+
+class CPPEvaluator(Evaluator):
+    """
+    C/C++ specific evaluator that compiles and runs C/C++ programs
+    
+    This evaluator handles:
+    - Compilation with gcc/g++ 
+    - Execution with timeout and memory limits
+    - Safety constraints (no file I/O, system calls, etc.)
+    - Performance measurement
+    """
+    
+    def __init__(
+        self,
+        config: EvaluatorConfig,
+        evaluation_file: str,
+        llm_ensemble: Optional[LLMEnsemble] = None,
+        prompt_sampler: Optional[PromptSampler] = None,
+        compiler: str = "auto",
+        compile_flags: Optional[List[str]] = None,
+        timeout_compile: float = 10.0,
+        timeout_run: float = 30.0,
+    ):
+        super().__init__(config, evaluation_file, llm_ensemble, prompt_sampler)
+        
+        self.compiler = compiler
+        self.compile_flags = compile_flags or ["-O2", "-Wall", "-Wextra"]
+        self.timeout_compile = timeout_compile
+        self.timeout_run = timeout_run
+        
+        # Determine appropriate compiler
+        if compiler == "auto":
+            self.compiler = self._detect_compiler()
+        
+        logger.info(f"CPP Evaluator initialized with compiler: {self.compiler}")
+    
+    def _detect_compiler(self) -> str:
+        """Detect available C/C++ compiler"""
+        for compiler in ["g++", "gcc", "clang++", "clang"]:
+            try:
+                result = subprocess.run(
+                    [compiler, "--version"],
+                    capture_output=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    logger.info(f"Detected compiler: {compiler}")
+                    return compiler
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                continue
+        
+        raise RuntimeError("No C/C++ compiler found (tried: g++, gcc, clang++, clang)")
+    
+    def _determine_language_and_compiler(self, source_code: str) -> Tuple[str, str]:
+        """Determine if code is C or C++ and select appropriate compiler"""
+        # Simple heuristic: check for C++ features
+        cpp_indicators = [
+            "#include <iostream>",
+            "#include <vector>", 
+            "#include <string>",
+            "std::",
+            "using namespace",
+            "class ",
+            "template<",
+            "new ",
+            "delete ",
+        ]
+        
+        is_cpp = any(indicator in source_code for indicator in cpp_indicators)
+        
+        if is_cpp:
+            # Prefer g++ for C++, fallback to clang++
+            for compiler in ["g++", "clang++"]:
+                if self.compiler == compiler or (self.compiler == "auto" and self._compiler_available(compiler)):
+                    return "cpp", compiler
+            return "cpp", "g++"  # fallback
+        else:
+            # Prefer gcc for C, fallback to clang
+            for compiler in ["gcc", "clang"]:
+                if self.compiler == compiler or (self.compiler == "auto" and self._compiler_available(compiler)):
+                    return "c", compiler
+            return "c", "gcc"  # fallback
+    
+    def _compiler_available(self, compiler: str) -> bool:
+        """Check if compiler is available"""
+        try:
+            result = subprocess.run(
+                [compiler, "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return False
+    
+    async def evaluate_program(
+        self,
+        program_code: str,
+        program_id: str = "",
+    ) -> Dict[str, float]:
+        """
+        Evaluate a C/C++ program by compiling and running it
+        
+        Args:
+            program_code: C/C++ source code to evaluate
+            program_id: Optional ID for logging
+            
+        Returns:
+            Dictionary of metric name to score
+        """
+        start_time = time.time()
+        program_id_str = f" {program_id}" if program_id else ""
+        
+        # Safety checks
+        if not self._is_safe_code(program_code):
+            logger.warning(f"Unsafe code detected in program{program_id_str}")
+            return {"safety": 0.0, "error": 1.0}
+        
+        # Determine language and compiler
+        language, compiler = self._determine_language_and_compiler(program_code)
+        
+        # Create temporary files
+        source_suffix = ".cpp" if language == "cpp" else ".c"
+        
+        with tempfile.NamedTemporaryFile(suffix=source_suffix, delete=False, mode='w') as source_file:
+            source_file.write(program_code)
+            source_path = source_file.name
+        
+        with tempfile.NamedTemporaryFile(delete=False) as executable_file:
+            executable_path = executable_file.name
+        
+        try:
+            # Compile the program
+            compile_success, compile_time, compile_output = await self._compile_program(
+                source_path, executable_path, compiler
+            )
+            
+            if not compile_success:
+                logger.warning(f"Compilation failed for program{program_id_str}: {compile_output}")
+                return {"compilation": 0.0, "error": 1.0}
+            
+            # Run the evaluation
+            eval_result = await self._run_evaluation(executable_path, source_path)
+            
+            # Add compilation metrics
+            eval_result["compilation_time"] = compile_time
+            eval_result["compilation"] = 1.0
+            eval_result["safety"] = 1.0  # Passed safety checks
+            
+            elapsed = time.time() - start_time
+            logger.info(
+                f"Evaluated C/C++ program{program_id_str} in {elapsed:.2f}s: "
+                f"{format_metrics_safe(eval_result)}"
+            )
+            
+            return eval_result
+            
+        except Exception as e:
+            logger.error(f"Error evaluating C/C++ program{program_id_str}: {str(e)}")
+            return {"error": 1.0}
+        
+        finally:
+            # Clean up temporary files
+            for path in [source_path, executable_path]:
+                if os.path.exists(path):
+                    try:
+                        os.unlink(path)
+                    except OSError:
+                        pass
+    
+    def _is_safe_code(self, code: str) -> bool:
+        """Check if C/C++ code follows safety constraints"""
+        dangerous_patterns = [
+            # System calls
+            "system(", "exec(", "fork(", "popen(",
+            # File I/O
+            "fopen(", "open(", "creat(", "freopen(",
+            "ofstream", "ifstream", "fstream",
+            # Network
+            "socket(", "bind(", "listen(", "accept(",
+            # Memory issues (basic check)
+            "malloc(", "calloc(", "realloc(", "free(",
+            # Dangerous includes
+            "#include <unistd.h>", "#include <sys/",
+            # Assembly
+            "__asm__", "asm(",
+        ]
+        
+        code_lower = code.lower()
+        for pattern in dangerous_patterns:
+            if pattern.lower() in code_lower:
+                logger.warning(f"Dangerous pattern detected: {pattern}")
+                return False
+        
+        return True
+    
+    async def _compile_program(
+        self, source_path: str, executable_path: str, compiler: str
+    ) -> Tuple[bool, float, str]:
+        """Compile C/C++ program"""
+        compile_start = time.time()
+        
+        cmd = [compiler] + self.compile_flags + ["-o", executable_path, source_path]
+        
+        try:
+            result = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                # No stdin to prevent hanging
+            )
+            
+            stdout, _ = await asyncio.wait_for(
+                result.communicate(), timeout=self.timeout_compile
+            )
+            
+            compile_time = time.time() - compile_start
+            compile_output = stdout.decode('utf-8', errors='ignore')
+            
+            return result.returncode == 0, compile_time, compile_output
+            
+        except asyncio.TimeoutError:
+            logger.warning(f"Compilation timeout after {self.timeout_compile}s")
+            return False, self.timeout_compile, "Compilation timeout"
+        except Exception as e:
+            compile_time = time.time() - compile_start
+            return False, compile_time, f"Compilation error: {str(e)}"
+    
+    async def _run_evaluation(self, executable_path: str, source_path: str) -> Dict[str, float]:
+        """Run the compiled program with the evaluation function"""
+        try:
+            # Use the parent class evaluation with compiled executable
+            if self.config.cascade_evaluation:
+                result = await self._cascade_evaluate_cpp(executable_path, source_path)
+            else:
+                result = await self._direct_evaluate_cpp(executable_path, source_path)
+            
+            return self._process_evaluation_result(result).metrics
+            
+        except Exception as e:
+            logger.error(f"Error running evaluation: {str(e)}")
+            return {"error": 1.0}
+    
+    @run_in_executor
+    def _direct_evaluate_cpp(self, executable_path: str, source_path: str) -> Dict[str, float]:
+        """Direct evaluation for C/C++ programs"""
+        # Call the evaluation function with both executable and source paths
+        return self.evaluate_function(executable_path, source_path)
+    
+    async def _cascade_evaluate_cpp(
+        self, executable_path: str, source_path: str
+    ) -> Union[Dict[str, float], EvaluationResult]:
+        """Cascade evaluation for C/C++ programs"""
+        # Start with direct evaluation
+        direct_result = await self._direct_evaluate_cpp(executable_path, source_path)
+        
+        # Check if evaluation meets threshold
+        if not self._passes_threshold(direct_result, self.config.cascade_threshold):
+            return EvaluationResult(metrics=direct_result)
+        
+        # Add LLM evaluation if threshold is met
+        if self.llm_ensemble:
+            # Read source code for LLM evaluation
+            with open(source_path, 'r') as f:
+                source_code = f.read()
+            
+            llm_metrics = await self._llm_evaluate(source_code)
+            
+            # Combine metrics
+            combined_metrics = direct_result.copy()
+            for name, value in llm_metrics.items():
+                combined_metrics[f"llm_{name}"] = value * self.config.llm_feedback_weight
+            
+            return EvaluationResult(metrics=combined_metrics)
+        
+        return EvaluationResult(metrics=direct_result)

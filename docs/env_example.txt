@@ -1,0 +1,44 @@
+# OpenEvolve 环境变量配置示例
+# 将此文件内容复制到项目根目录的 .env 文件中
+
+# OpenAI (GPT-4o, GPT-4, GPT-3.5)
+# 获取地址: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your_openai_api_key_here
+
+# Anthropic (Claude 3.5 Sonnet, Claude 3 Haiku)
+# 获取地址: https://console.anthropic.com/
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Google (Gemini Pro, Gemini Flash) - 推荐，免费配额较高
+# 获取地址: https://makersuite.google.com/app/apikey
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Mistral AI
+# 获取地址: https://console.mistral.ai/
+MISTRAL_API_KEY=your_mistral_api_key_here
+
+# OpenRouter (访问多种开源模型)
+# 获取地址: https://openrouter.ai/keys
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+# xAI (Grok)
+# 获取地址: https://console.x.ai/
+XAI_API_KEY=your_xai_api_key_here
+
+# Azure OpenAI (企业用户)
+# AZURE_OPENAI_API_KEY=your_azure_openai_key_here
+# AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+
+# Ollama (本地部署，免费)
+# OLLAMA_BASE_URL=http://localhost:11434/api
+# OLLAMA_API_KEY=optional_if_auth_enabled
+
+# Perplexity (用于研究功能)
+# 获取地址: https://www.perplexity.ai/settings/api
+PERPLEXITY_API_KEY=your_perplexity_api_key_here
+
+# 使用说明：
+# 1. 将此文件内容复制到项目根目录的 .env 文件
+# 2. 取消注释并填入您要使用的服务商的真实 API Key
+# 3. 保存文件后运行: python scripts/test_api_config.py
+# 4. 在配置文件中选择对应的模型名称 

@@ -88,17 +88,15 @@ class PromptSampler:
             # Default behavior
             user_template_key = "full_rewrite_user" if allow_full_rewrite else "diff_user"
 
-        # Get the template
-        user_template = self.template_manager.get_template(user_template_key)
+        # Get the template (using language-specific templates if available)
+        user_template = self.template_manager.get_language_template(user_template_key, language)
 
-        # Use system template override if set
+        # Use system template override if set, otherwise get language-specific system template
         if self.system_template_override:
-            system_message = self.template_manager.get_template(self.system_template_override)
+            system_message = self.template_manager.get_language_template(self.system_template_override, language)
         else:
-            system_message = self.config.system_message
-            # If system_message is a template name rather than content, get the template
-            if system_message in self.template_manager.templates:
-                system_message = self.template_manager.get_template(system_message)
+            # Get language-specific system message
+            system_message = self.template_manager.get_system_message(language)
 
         # Format metrics
         metrics_str = self._format_metrics(program_metrics)

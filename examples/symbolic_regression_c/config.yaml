@@ -1,0 +1,57 @@
+# Configuration for symbolic regression C++ example
+# Target: Evolve a C++ function to approximate y = x^2 + x
+
+# Language configuration
+language: cpp
+compiler: auto  # Will auto-detect g++/clang++
+compile_flags: ["-O2", "-Wall", "-Wextra", "-std=c++17"]
+compile_timeout: 10.0
+run_timeout: 30.0
+
+# General settings
+max_iterations: 100
+checkpoint_interval: 20
+log_level: "INFO"
+
+# LLM configuration
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  temperature: 0.7
+  top_p: 0.95
+  max_tokens: 4096
+  timeout: 60
+  models:
+    - name: "anthropic/claude-4-sonnet-20250522"
+      weight: 1.0
+
+# Prompt configuration
+prompt:
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+  include_artifacts: true
+
+# Database configuration
+database:
+  population_size: 50
+  archive_size: 20
+  num_islands: 3
+  elite_selection_ratio: 0.1
+  exploration_ratio: 0.3
+  exploitation_ratio: 0.6
+  migration_interval: 10
+  migration_rate: 0.1
+
+# Evaluator configuration
+evaluator:
+  timeout: 30
+  max_retries: 2
+  cascade_evaluation: false
+  parallel_evaluations: 2
+  use_llm_feedback: false
+  llm_feedback_weight: 0.1
+
+# Evolution settings
+diff_based_evolution: true
+allow_full_rewrites: false
+max_code_length: 2000 

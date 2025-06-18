@@ -1,0 +1,63 @@
+Project: OpenEvolve Refactor and Quality Improvement
+
+Background:
+OpenEvolve is an open-source evolutionary programming framework that interfaces with LLMs to iteratively improve code solutions. The current codebase is functional but lacks modern DevOps, robust testing, comprehensive documentation, and strict typing. Improving these areas will increase project stability, developer onboarding speed, and community adoption.
+
+Goals:
+1. Increase code quality and maintainability.
+2. Provide reliable automated testing and continuous integration workflows.
+3. Supply thorough documentation and examples for users and contributors.
+4. Enhance performance of LLM interactions through asynchronous concurrency.
+5. Improve packaging, release, and deployment processes.
+
+Success Metrics:
+• Unit-/integration-test coverage ≥ 80 %.
+• CI pipeline passes on all pushes and pull requests.
+• Documentation site deploys automatically and receives ≥ 500 page views within 3 months of release.
+• Average execution time of standard evaluation example reduced by ≥ 30 %.
+
+Scope & Features:
+1. **Type Annotations & Static Analysis**
+   • Add complete type hints to all public modules.
+   • Integrate mypy in CI.
+2. **Testing Suite Expansion**
+   • Write missing unit tests for controller, prompt sampler, and database modules.
+   • Add integration tests for example pipelines.
+3. **Continuous Integration (CI)**
+   • Configure GitHub Actions to run lint (black, isort, flake8), mypy, and pytest with coverage.
+4. **Documentation Website**
+   • Generate API docs with Sphinx + autodoc.
+   • Host on GitHub Pages and automate deployment.
+5. **Logging & Observability**
+   • Centralize logging using the standard logging library with configurable log levels.
+6. **Code Formatting & Pre-commit Hooks**
+   • Apply black and isort; enforce via pre-commit.
+7. **Performance Optimization**
+   • Refactor LLM calls to leverage asyncio.gather for parallel batch requests.
+8. **Modular Refactor of database.py**
+   • Split >1000-line file into logical sub-modules (models, storage, operations).
+9. **Packaging & Dockerization**
+   • Provide Dockerfile + docker-compose.yml for easy local setup.
+   • Update README with instructions.
+10. **Configuration Validation**
+    • Replace ad-hoc YAML parsing with Pydantic-based config schema.
+
+Out of Scope:
+• Large-scale algorithmic changes to evolutionary logic.
+• Paid hosting or cloud deployment services.
+
+Milestones & Timeline:
+M1 (Week 1-2): Type hints, mypy, logging.
+M2 (Week 3-4): Test coverage expansion, CI pipeline.
+M3 (Week 5-6): Modular refactor, performance optimization.
+M4 (Week 7-8): Documentation site, packaging, dockerization.
+
+Risks & Mitigations:
+• Refactor may introduce regressions → rely on growing test suite.
+• Async changes might complicate error handling → add extensive logging & retries.
+
+Deliverables:
+• Updated codebase with refactors and performance improvements.
+• Passing CI with ≥ 80 % coverage.
+• Published documentation site.
+• Docker images and deployment guide. 

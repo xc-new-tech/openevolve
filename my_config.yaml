@@ -1,0 +1,70 @@
+# OpenEvolve 自定义配置 - 使用 OpenRouter
+# 基于 OpenRouter API 的配置
+
+# 基本设置
+max_iterations: 100
+checkpoint_interval: 10
+log_level: "INFO"
+random_seed: 42
+
+# 语言设置
+language: python
+
+# 进化设置
+diff_based_evolution: true
+allow_full_rewrites: false
+max_code_length: 5000
+
+# LLM 配置 - 使用 OpenRouter
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  api_key: null  # 使用环境变量 OPENROUTER_API_KEY
+  
+  # 进化模型
+  models:
+    - name: "anthropic/claude-3-haiku"  # 快速且便宜
+      weight: 0.7
+    - name: "meta-llama/llama-3.1-8b-instruct"  # 开源模型
+      weight: 0.3
+  
+  # 评估模型（可以使用更强的模型）
+  evaluator_models:
+    - name: "anthropic/claude-3-haiku"
+      weight: 1.0
+  
+  # 生成参数
+  temperature: 0.7
+  top_p: 0.95
+  max_tokens: 2048
+  
+  # 请求参数
+  timeout: 60
+  retries: 3
+  retry_delay: 5
+
+# 提示词配置
+prompt:
+  system_message: "You are an expert coder helping to improve programs through evolution."
+  evaluator_system_message: "You are an expert code reviewer."
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+
+# 数据库配置
+database:
+  db_path: null
+  in_memory: true
+  population_size: 100  # 较小的种群用于测试
+  archive_size: 20
+  num_islands: 3
+  migration_interval: 10
+  migration_rate: 0.1
+
+# 评估器配置
+evaluator:
+  timeout: 60
+  max_retries: 3
+  cascade_evaluation: true
+  cascade_thresholds: [0.5, 0.75, 0.9]
+  parallel_evaluations: 2
+  use_llm_feedback: false 

@@ -4,9 +4,15 @@ FROM python:3.12-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including C/C++ toolchain
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    gcc \
+    g++ \
+    clang \
+    clang++ \
+    libc6-dev \
+    make \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the project files into the container
