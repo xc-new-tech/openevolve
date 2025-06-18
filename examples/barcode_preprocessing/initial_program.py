@@ -246,3 +246,4 @@ if __name__ == "__main__":
     else:
         print(f"Sample directory '{sample_dir}' not found")
         print("Please add some barcode images to the sample_images directory")
+

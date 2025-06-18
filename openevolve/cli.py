@@ -160,7 +160,13 @@ async def main_async() -> int:
         print(f"\nEvolution complete!")
         print(f"Best program metrics:")
         for name, value in best_program.metrics.items():
-            print(f"  {name}: {value:.4f}")
+            # Handle different value types appropriately
+            if isinstance(value, (int, float)):
+                print(f"  {name}: {value:.4f}")
+            elif isinstance(value, list):
+                print(f"  {name}: [list with {len(value)} items]")
+            else:
+                print(f"  {name}: {value}")
 
         if latest_checkpoint:
             print(f"\nLatest checkpoint saved at: {latest_checkpoint}")
