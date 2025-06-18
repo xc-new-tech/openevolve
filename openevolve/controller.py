@@ -493,12 +493,54 @@ class OpenEvolve:
         # Save the database
         self.database.save(checkpoint_path, iteration)
 
-        # Save the best program found so far
-        best_program = None
-        if self.database.best_program_id:
-            best_program = self.database.get(self.database.best_program_id)
-        else:
-            best_program = self.database.get_best_program()
+        # Save the best program found so far - use the same comprehensive logic as _save_best_program
+        best_program = self.database.get_best_program()
+        
+        # Double-check by scanning all programs to ensure we get the absolute best
+        all_programs = list(self.database.programs.values())
+        if all_programs:
+            # First try to find by 'score' metric (for barcode preprocessing)
+            best_by_score = max(
+                [p for p in all_programs if "score" in p.metrics],
+                key=lambda p: p.metrics["score"],
+                default=None
+            )
+            
+            # Then try combined_score as fallback
+            best_by_combined = max(
+                [p for p in all_programs if "combined_score" in p.metrics],
+                key=lambda p: p.metrics["combined_score"],
+                default=None
+            )
+            
+            # Choose the best program from available metrics
+            candidates = []
+            if best_by_score and best_program:
+                if ("score" in best_by_score.metrics and "score" in best_program.metrics 
+                    and best_by_score.metrics["score"] > best_program.metrics["score"]):
+                    candidates.append(best_by_score)
+            elif best_by_score and not best_program:
+                candidates.append(best_by_score)
+                
+            if best_by_combined and best_program:
+                if ("combined_score" in best_by_combined.metrics and "combined_score" in best_program.metrics
+                    and best_by_combined.metrics["combined_score"] > best_program.metrics["combined_score"]):
+                    candidates.append(best_by_combined)
+            elif best_by_combined and not best_program:
+                candidates.append(best_by_combined)
+            
+            # Use the best candidate found
+            if candidates:
+                # If multiple candidates, choose the one with highest score
+                if len(candidates) > 1 and all("score" in p.metrics for p in candidates):
+                    best_program = max(candidates, key=lambda p: p.metrics["score"])
+                elif candidates:
+                    best_program = candidates[0]
+                    
+                logger.info(
+                    f"Checkpoint {iteration}: Found better program during save: {best_program.id} "
+                    f"(score: {best_program.metrics.get('score', 'N/A'):.4f})"
+                )
 
         if best_program:
             # Save the best program at this checkpoint
@@ -548,25 +590,39 @@ class OpenEvolve:
             # Double-check by scanning all programs to ensure we get the absolute best
             all_programs = list(self.database.programs.values())
             if all_programs:
-                # Find the program with the highest combined_score
+                # First try to find by 'score' metric (for barcode preprocessing)
+                best_by_score = max(
+                    [p for p in all_programs if "score" in p.metrics],
+                    key=lambda p: p.metrics["score"],
+                    default=None
+                )
+                
+                # Then try combined_score as fallback
                 best_by_combined = max(
                     [p for p in all_programs if "combined_score" in p.metrics],
                     key=lambda p: p.metrics["combined_score"],
                     default=None
                 )
                 
-                # If we found a program and it's better than the current one, use it
-                if (best_by_combined 
-                    and program 
-                    and "combined_score" in best_by_combined.metrics 
-                    and "combined_score" in program.metrics
-                    and best_by_combined.metrics["combined_score"] > program.metrics["combined_score"]):
-                    logger.info(
-                        f"Found better program during save: {best_by_combined.id} "
-                        f"(score: {best_by_combined.metrics['combined_score']:.4f}) vs "
-                        f"{program.id} (score: {program.metrics['combined_score']:.4f})"
-                    )
-                    program = best_by_combined
+                # Choose the best program from available metrics
+                if best_by_score and program and "score" in program.metrics:
+                    if best_by_score.metrics["score"] > program.metrics["score"]:
+                        logger.info(
+                            f"Found better program during save: {best_by_score.id} "
+                            f"(score: {best_by_score.metrics['score']:.4f}) vs "
+                            f"{program.id} (score: {program.metrics['score']:.4f})"
+                        )
+                        program = best_by_score
+                elif best_by_score and not program:
+                    program = best_by_score
+                elif best_by_combined and program and "combined_score" in program.metrics:
+                    if best_by_combined.metrics["combined_score"] > program.metrics["combined_score"]:
+                        logger.info(
+                            f"Found better program during save: {best_by_combined.id} "
+                            f"(combined_score: {best_by_combined.metrics['combined_score']:.4f}) vs "
+                            f"{program.id} (combined_score: {program.metrics['combined_score']:.4f})"
+                        )
+                        program = best_by_combined
                 elif best_by_combined and not program:
                     program = best_by_combined
 
@@ -604,5 +660,10 @@ class OpenEvolve:
                 indent=2,
             )
 
-        logger.info(f"Saved REAL best program {program.id} to {code_path} with score {program.metrics.get('combined_score', 'N/A'):.4f}")
+        # Log with appropriate score metric
+        score_value = program.metrics.get('score', program.metrics.get('combined_score', 'N/A'))
+        if score_value != 'N/A':
+            logger.info(f"Saved REAL best program {program.id} to {code_path} with score {score_value:.4f}")
+        else:
+            logger.info(f"Saved REAL best program {program.id} to {code_path} (no score available)")
         logger.info(f"Program info saved to {info_path}")
