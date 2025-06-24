@@ -1,14 +1,18 @@
 """
-Evaluator for barcode preprocessing example
+增强的条形码预处理评估器
 
 Features:
-- Parallel barcode decoding for better performance
-- Detailed logging with configurable verbosity
-- Failed image analysis and saving
-- Performance profiling and metrics
-- Batch processing optimization
-- Memory usage monitoring
-- CI-friendly execution modes
+- 并行条形码解码以提高性能
+- 可配置详细程度的详细日志记录
+- 失败图像分析和保存
+- 性能分析和指标
+- 批量处理优化
+- 内存使用监控
+- CI友好的执行模式
+- 统一的预处理算法评估
+- 基准测试集成
+- 算法性能分析
+- 详细的评估报告生成
 """
 
 import importlib.util
@@ -25,12 +29,28 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from datetime import datetime
 import json
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any, Callable
+from dataclasses import dataclass, asdict
+import shutil
+import glob
 
 import cv2
 import numpy as np
 from pyzbar import pyzbar
 from PIL import Image
+try:
+    import psutil
+    HAS_OPTIONAL_DEPS = True
+except ImportError:
+    HAS_OPTIONAL_DEPS = False
+
+# 尝试导入可选依赖
+try:
+    import matplotlib.pyplot as plt
+    import psutil
+    HAS_OPTIONAL_DEPS = True
+except ImportError:
+    HAS_OPTIONAL_DEPS = False
 
 # Configure logging
 class ColoredFormatter(logging.Formatter):
@@ -87,6 +107,44 @@ logger = setup_logging()
 
 class TimeoutError(Exception):
     pass
+
+@dataclass
+class TestResult:
+    """测试结果数据类"""
+    algorithm_name: str
+    total_images: int
+    successful_decodes: int
+    success_rate: float
+    processing_time: float
+    throughput: float
+    memory_usage: float = 0.0
+    cpu_usage: float = 0.0
+    decoded_barcodes_count: int = 0
+    failed_images: List[str] = None
+    type_statistics: Dict[str, Any] = None
+    quality_metrics: Dict[str, float] = None
+    timestamp: str = None
+    
+    def __post_init__(self):
+        if self.failed_images is None:
+            self.failed_images = []
+        if self.type_statistics is None:
+            self.type_statistics = {}
+        if self.quality_metrics is None:
+            self.quality_metrics = {}
+        if self.timestamp is None:
+            self.timestamp = datetime.now().isoformat()
+
+@dataclass 
+class ComparisonReport:
+    """对比报告数据类"""
+    baseline_result: TestResult
+    processed_result: TestResult
+    improvement_metrics: Dict[str, float]
+    quality_improvement: Dict[str, float]
+    performance_impact: Dict[str, float]
+    overall_score: float
+    recommendation: str
 
 class BarcodeDecodeResult:
     """Container for barcode decode results with additional metadata"""
@@ -376,35 +434,36 @@ def generate_failure_summary(failed_analysis: List[Dict]) -> Dict:
         'most_common_issue': max(issue_counts.items(), key=lambda x: x[1])[0] if issue_counts else None
     }
 
-def test_barcode_set_enhanced(image_dir: str, 
-                            parallel: bool = True,
-                            max_workers: int = None,
-                            save_failures: bool = False,
-                            verbose: bool = False) -> Dict:
+def test_barcode_set(image_dir: str, 
+                   parallel: bool = True,
+                   max_workers: int = None,
+                   save_failures: bool = False,
+                   verbose: bool = False,
+                   algorithm_name: str = "unknown") -> TestResult:
     """
-    Enhanced test barcode decoding on a set of images
+    条形码解码测试
     
     Args:
-        image_dir: Directory containing barcode images
-        parallel: Whether to use parallel processing
-        max_workers: Maximum number of workers for parallel processing
-        save_failures: Whether to save failed images for analysis
-        verbose: Whether to show detailed progress
+        image_dir: 包含条形码图像的目录
+        parallel: 是否使用并行处理
+        max_workers: 并行处理的最大工作线程数
+        save_failures: 是否保存失败的图像进行分析
+        verbose: 是否显示详细进度
+        algorithm_name: 算法名称
         
     Returns:
-        Dictionary with comprehensive metrics
+        TestResult对象，包含全面的指标
     """
     if not os.path.exists(image_dir):
         logger.warning(f"Image directory does not exist: {image_dir}")
-        return {
-            'total_images': 0,
-            'successful_decodes': 0,
-            'success_rate': 0.0,
-            'processing_time': 0.0,
-            'throughput': 0.0,
-            'decoded_barcodes': [],
-            'failed_images': []
-        }
+        return TestResult(
+            algorithm_name=algorithm_name,
+            total_images=0,
+            successful_decodes=0,
+            success_rate=0.0,
+            processing_time=0.0,
+            throughput=0.0
+        )
     
     # Find all image files
     image_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.gif'}
@@ -416,15 +475,14 @@ def test_barcode_set_enhanced(image_dir: str,
     
     if not image_paths:
         logger.warning(f"No image files found in {image_dir}")
-        return {
-            'total_images': 0,
-            'successful_decodes': 0,
-            'success_rate': 0.0,
-            'processing_time': 0.0,
-            'throughput': 0.0,
-            'decoded_barcodes': [],
-            'failed_images': []
-        }
+        return TestResult(
+            algorithm_name=algorithm_name,
+            total_images=0,
+            successful_decodes=0,
+            success_rate=0.0,
+            processing_time=0.0,
+            throughput=0.0
+        )
     
     logger.info(f"Found {len(image_paths)} images in {image_dir}")
     start_time = time.time()
@@ -518,21 +576,116 @@ def test_barcode_set_enhanced(image_dir: str,
     if save_failures and failed_results:
         failed_dir = save_failed_images(failed_results, image_dir)
     
+    # 计算质量指标
+    quality_metrics = calculate_quality_metrics(results, type_stats)
+    
+    # 内存和CPU使用（如果可用）
+    memory_usage = 0.0
+    cpu_usage = 0.0
+    if HAS_OPTIONAL_DEPS:
+        try:
+            memory_usage = psutil.virtual_memory().percent
+            cpu_usage = psutil.cpu_percent()
+        except:
+            pass
+    
+    return TestResult(
+        algorithm_name=algorithm_name,
+        total_images=total_images,
+        successful_decodes=successful_decodes,
+        success_rate=success_rate,
+        processing_time=processing_time,
+        throughput=throughput,
+        memory_usage=memory_usage,
+        cpu_usage=cpu_usage,
+        decoded_barcodes_count=len(all_decoded_barcodes),
+        failed_images=[r.filename for r in failed_results],
+        type_statistics=type_stats,
+        quality_metrics=quality_metrics
+    )
+
+def calculate_quality_metrics(results: List[BarcodeDecodeResult], 
+                            type_stats: Dict[str, Any]) -> Dict[str, float]:
+    """计算图像质量指标"""
+    if not results:
+        return {}
+    
+    # 计算平均处理时间
+    avg_processing_time = np.mean([r.processing_time for r in results])
+    
+    # 计算成功率方差（稳定性指标）
+    success_rates_by_type = []
+    for type_name, stats in type_stats.items():
+        if stats['total'] > 0:
+            success_rates_by_type.append(stats['success_rate'])
+    
+    stability_score = 1.0 - np.var(success_rates_by_type) if success_rates_by_type else 0.0
+    
+    # 处理时间一致性
+    processing_times = [r.processing_time for r in results]
+    time_consistency = 1.0 / (1.0 + np.std(processing_times)) if processing_times else 0.0
+    
     return {
-        'total_images': total_images,
-        'successful_decodes': successful_decodes,
-        'success_rate': success_rate,
-        'processing_time': processing_time,
-        'throughput': throughput,
-        'decoded_barcodes': all_decoded_barcodes,
-        'decoded_barcodes_count': len(all_decoded_barcodes),
-        'failed_images': [r.filename for r in failed_results],
-        'failed_results': failed_results,
-        'failed_dir': failed_dir,
-        'average_processing_time': np.mean([r.processing_time for r in results]),
-        'processing_times': [r.processing_time for r in results],
-        'type_statistics': type_stats
+        'average_processing_time': avg_processing_time,
+        'stability_score': max(0.0, stability_score),
+        'time_consistency': max(0.0, time_consistency),
+        'total_barcode_types': len(type_stats),
+        'successful_types': sum(1 for stats in type_stats.values() if stats['successful'] > 0)
     }
+
+def generate_comparison_report(baseline: TestResult, 
+                             processed: TestResult) -> ComparisonReport:
+    """生成对比报告"""
+    
+    # 计算改进指标
+    improvement_metrics = {
+        'success_rate_improvement': processed.success_rate - baseline.success_rate,
+        'throughput_improvement': processed.throughput - baseline.throughput,
+        'processing_time_improvement': baseline.processing_time - processed.processing_time,
+        'memory_efficiency': baseline.memory_usage - processed.memory_usage if baseline.memory_usage > 0 else 0,
+    }
+    
+    # 质量改进
+    quality_improvement = {}
+    if baseline.quality_metrics and processed.quality_metrics:
+        for key in baseline.quality_metrics:
+            if key in processed.quality_metrics:
+                quality_improvement[key] = processed.quality_metrics[key] - baseline.quality_metrics[key]
+    
+    # 性能影响
+    performance_impact = {
+        'speed_factor': processed.throughput / baseline.throughput if baseline.throughput > 0 else 1.0,
+        'time_reduction_percent': (improvement_metrics['processing_time_improvement'] / baseline.processing_time * 100) 
+                                if baseline.processing_time > 0 else 0.0,
+        'success_rate_delta': improvement_metrics['success_rate_improvement'] * 100
+    }
+    
+    # 综合评分 (0-100)
+    success_score = min(50, improvement_metrics['success_rate_improvement'] * 200)  # 最高50分
+    speed_score = min(30, max(0, performance_impact['time_reduction_percent']))     # 最高30分  
+    efficiency_score = min(20, improvement_metrics['memory_efficiency'])           # 最高20分
+    
+    overall_score = max(0, success_score + speed_score + efficiency_score)
+    
+    # 生成建议
+    if overall_score >= 70:
+        recommendation = "强烈推荐：预处理算法显著改善了解码性能"
+    elif overall_score >= 40:
+        recommendation = "推荐：预处理算法有明显改进，值得采用"
+    elif overall_score >= 10:
+        recommendation = "谨慎考虑：预处理算法有轻微改进，需权衡成本效益"
+    else:
+        recommendation = "不推荐：预处理算法未显示明显改进或有负面影响"
+    
+    return ComparisonReport(
+        baseline_result=baseline,
+        processed_result=processed,
+        improvement_metrics=improvement_metrics,
+        quality_improvement=quality_improvement,
+        performance_impact=performance_impact,
+        overall_score=overall_score,
+        recommendation=recommendation
+    )
 
 def run_with_timeout(program_path: str, 
                     sample_images_dir: str, 
@@ -642,14 +795,14 @@ except Exception as e:
         if os.path.exists(results_path):
             os.unlink(results_path)
 
-def evaluate_enhanced(program_path: str,
-                     parallel: bool = True,
-                     max_workers: int = None,
-                     save_failures: bool = False,
-                     verbose: bool = False,
-                     timeout_seconds: int = 30) -> Dict:
+def evaluate(program_path: str,
+            parallel: bool = True,
+            max_workers: int = None,
+            save_failures: bool = False,
+            verbose: bool = False,
+            timeout_seconds: int = 30) -> Dict:
     """
-    Enhanced evaluation of the barcode preprocessing program
+    统一的条码预处理算法评估函数
     
     Args:
         program_path: Path to the preprocessing program
@@ -707,42 +860,44 @@ def evaluate_enhanced(program_path: str,
         logger.info(f"Found {len(image_files)} sample images")
         
         # Test original images first (baseline)
-        logger.info("Testing original images...")
-        original_results = test_barcode_set_enhanced(
+        logger.info("Testing baseline (原始图像)...")
+        baseline_results = test_barcode_set(
             sample_images_dir, 
             parallel=parallel,
             max_workers=max_workers,
             save_failures=save_failures,
-            verbose=verbose
+            verbose=verbose,
+            algorithm_name="Baseline"
         )
         
         # Run preprocessing with timeout
-        logger.info("Running preprocessing...")
+        logger.info("Running preprocessing algorithm...")
         preprocessing_start = time.time()
         processed_dir = run_with_timeout(program_path, sample_images_dir, timeout_seconds)
         preprocessing_time = time.time() - preprocessing_start
         
         # Test processed images
-        logger.info("Testing processed images...")
-        processed_results = test_barcode_set_enhanced(
+        logger.info("Testing preprocessed images...")
+        processed_results = test_barcode_set(
             processed_dir,
             parallel=parallel,
             max_workers=max_workers,
             save_failures=save_failures,
-            verbose=verbose
+            verbose=verbose,
+            algorithm_name="Preprocessed"
         )
         
         end_time = time.time()
         total_execution_time = end_time - start_time
         
         # Calculate improvement metrics
-        original_rate = original_results['success_rate']
-        processed_rate = processed_results['success_rate']
-        improvement = processed_rate - original_rate
+        baseline_rate = baseline_results.success_rate
+        processed_rate = processed_results.success_rate
+        improvement = processed_rate - baseline_rate
         
         # Performance metrics
-        original_throughput = original_results['throughput']
-        processed_throughput = processed_results['throughput']
+        baseline_throughput = baseline_results.throughput
+        processed_throughput = processed_results.throughput
         
         # Clean up processed directory
         try:
@@ -752,65 +907,70 @@ def evaluate_enhanced(program_path: str,
         except Exception as e:
             logger.warning(f"Failed to clean up {processed_dir}: {e}")
         
-        # Calculate final score with enhanced metrics
-        if processed_results['total_images'] == 0:
+        # Generate comparison report
+        comparison_report = generate_comparison_report(baseline_results, processed_results)
+        
+        # Calculate final score
+        if processed_results.total_images == 0:
             score = 0.0
         else:
-            # Base score is the processed success rate
-            score = processed_rate * 100
+            # 主要基于成功率改进，加权处理时间和吞吐量
+            success_weight = 0.7
+            throughput_weight = 0.2
+            time_weight = 0.1
             
-            # Bonus for improvement over original
-            if improvement > 0:
-                score += improvement * 50  # 50 point bonus per 1% improvement
+            # 成功率得分 (0-100)
+            success_score = processed_rate * 100
             
-            # Penalty for making things worse
-            elif improvement < 0:
-                score += improvement * 100  # Heavy penalty for degradation
+            # 改进得分 (考虑相对基线的提升)
+            improvement_factor = improvement / baseline_rate if baseline_rate > 0 else 0
+            improvement_score = min(20, improvement_factor * 100)  # 最多额外加20分
             
-            # Performance bonus for fast processing
-            if processed_throughput > 1.0:  # More than 1 image per second
-                score += min(processed_throughput, 10) * 2  # Up to 20 point bonus
+            # 吞吐量得分 (标准化到0-100)
+            throughput_score = min(100, (processed_throughput / 100) * 100)  # 假设100图像/秒为满分
+            
+            # 综合得分
+            score = (success_score * success_weight + 
+                    throughput_score * throughput_weight + 
+                    improvement_score * time_weight)
         
         # Comprehensive results
         results = {
             'score': max(0.0, score),
             'success_rate': processed_rate,
-            'original_success_rate': original_rate,
+            'baseline_success_rate': baseline_rate,
             'improvement': improvement,
-            'improvement_percentage': (improvement / original_rate * 100) if original_rate > 0 else 0,
-            'total_images': processed_results['total_images'],
-            'successful_decodes': processed_results['successful_decodes'],
-            'original_successful_decodes': original_results['successful_decodes'],
+            'improvement_percentage': (improvement / baseline_rate * 100) if baseline_rate > 0 else 0,
+            'total_images': processed_results.total_images,
+            'successful_decodes': processed_results.successful_decodes,
+            'baseline_successful_decodes': baseline_results.successful_decodes,
             'execution_time': total_execution_time,
             'preprocessing_time': preprocessing_time,
             'evaluation_time': total_execution_time - preprocessing_time,
-            'decoded_barcodes_count': len(processed_results['decoded_barcodes']),
-            'original_throughput': original_throughput,
+            'decoded_barcodes_count': processed_results.decoded_barcodes_count,
+            'baseline_throughput': baseline_throughput,
             'processed_throughput': processed_throughput,
-            'throughput_improvement': processed_throughput - original_throughput,
-            'failed_images': processed_results['failed_images'],
-            'failed_dir': processed_results.get('failed_dir', ''),
-            'original_failed_count': len(original_results['failed_images']),
-            'processed_failed_count': len(processed_results['failed_images']),
-            'average_processing_time': processed_results.get('average_processing_time', 0),
+            'throughput_improvement': processed_throughput - baseline_throughput,
+            'failed_images': processed_results.failed_images,
+            'baseline_failed_count': len(baseline_results.failed_images),
+            'processed_failed_count': len(processed_results.failed_images),
+            'average_processing_time': processed_results.quality_metrics.get('average_processing_time', 0),
             'parallel_processing': parallel,
-            'max_workers': max_workers or 1
+            'max_workers': max_workers or 1,
+            'comparison_report': comparison_report
         }
         
         # Log comprehensive summary
         logger.info("\n" + "="*60)
-        logger.info("EVALUATION SUMMARY")
+        logger.info("算法评估结果")
         logger.info("="*60)
-        logger.info(f"Score: {results['score']:.2f}")
-        logger.info(f"Success Rate: {results['success_rate']:.2%} (was {results['original_success_rate']:.2%})")
-        logger.info(f"Improvement: {results['improvement']:.2%} ({results['improvement_percentage']:+.1f}%)")
-        logger.info(f"Images: {results['successful_decodes']}/{results['total_images']} successful")
-        logger.info(f"Execution Time: {results['execution_time']:.2f}s (preprocessing: {results['preprocessing_time']:.2f}s)")
-        logger.info(f"Throughput: {results['processed_throughput']:.1f} images/sec")
-        
-        if results['failed_dir']:
-            logger.info(f"Failed images saved to: {results['failed_dir']}")
-        
+        logger.info(f"综合得分: {results['score']:.2f}")
+        logger.info(f"成功率: {results['success_rate']:.2%} (基线: {results['baseline_success_rate']:.2%})")
+        logger.info(f"改进幅度: {results['improvement']:.2%} ({results['improvement_percentage']:+.1f}%)")
+        logger.info(f"成功解码: {results['successful_decodes']}/{results['total_images']} 张")
+        logger.info(f"执行时间: {results['execution_time']:.2f}s (预处理: {results['preprocessing_time']:.2f}s)")
+        logger.info(f"处理速度: {results['processed_throughput']:.1f} 图像/秒")
+        logger.info(f"推荐: {comparison_report.recommendation}")
         logger.info("="*60)
         
         return results
@@ -845,7 +1005,7 @@ def main():
                        help='Timeout for preprocessing execution (seconds)')
     parser.add_argument('--log-file', type=str, default=None,
                        help='Save logs to file')
-    
+
     args = parser.parse_args()
     
     # Setup logging
@@ -854,8 +1014,7 @@ def main():
     
     logger.info(f"Starting evaluation of {args.program_path}")
     
-    # Run evaluation
-    results = evaluate_enhanced(
+    results = evaluate(
         args.program_path,
         parallel=args.parallel,
         max_workers=args.max_workers,
@@ -869,26 +1028,6 @@ def main():
     
     if 'error' in results:
         sys.exit(1)
-
-# OpenEvolve compatible evaluate function
-def evaluate(program_path: str) -> Dict:
-    """
-    OpenEvolve compatible evaluation function.
-    
-    Args:
-        program_path: Path to the program to evaluate
-    
-    Returns:
-        Dictionary with evaluation results including 'score' key
-    """
-    return evaluate_enhanced(
-        program_path,
-        parallel=True,
-        max_workers=2,  # Conservative for CI environments
-        save_failures=False,  # CI-friendly
-        verbose=False,
-        timeout_seconds=30
-    )
 
 if __name__ == "__main__":
     main() 

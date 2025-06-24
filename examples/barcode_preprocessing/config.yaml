@@ -2,22 +2,26 @@
 # Target: Evolve image preprocessing pipeline to improve barcode decoding success rate
 
 # General settings
-max_iterations: 20
-checkpoint_interval: 5
+max_iterations: 30
+checkpoint_interval: 10
 log_level: "INFO"
 
 # LLM configuration
 llm:
   api_base: "https://openrouter.ai/api/v1"
-  temperature: 0.7
+  temperature: 0.4
   top_p: 0.9
   max_tokens: 12000
   timeout: 120
   models:
-    - name: "openai/gpt-4.1"
-      weight: 0.7
     - name: "anthropic/claude-sonnet-4"
       weight: 0.3
+    - name: "openai/gpt-4.1"
+      weight: 0.7
+  # 评估模型（可以使用更强的模型）
+  evaluator_models:
+    - name: "anthropic/claude-sonnet-4"
+      weight: 1.0
 
 # Prompt configuration
 prompt:
@@ -33,29 +37,36 @@ prompt:
     - Proper preprocessing order matters: noise reduction → enhancement → geometric correction → binarization
 
     Focus on creating a robust preprocessing pipeline that can handle various types of barcode image degradation including blur, noise, perspective distortion, lighting variations, and partial occlusion.
-  num_top_programs: 5
+
+    CRITICAL REQUIREMENTS:
+    - MUST preserve the run_preprocessing(input_dir, output_dir) function signature
+    - Output ONLY pure Python code without markdown code blocks or comments
+    - Keep code length under 10,000 characters
+    - Ensure all imports and function definitions are syntactically correct
+  num_top_programs: 3
   use_template_stochasticity: true
 
 # Database configuration
 database:
-  population_size: 8
-  archive_size: 30
-  num_islands: 3
+  population_size: 200
+  archive_size: 50
+  num_islands: 5
   elite_selection_ratio: 0.2
-  exploitation_ratio: 0.6
+  exploitation_ratio: 0.7
 
 # Evaluator configuration
 evaluator:
   timeout: 60
-  max_retries: 2
+  max_retries: 5
   cascade_evaluation: true
-  cascade_thresholds: [0.2, 0.5]
-  parallel_evaluations: 4
+  cascade_thresholds: [0.5, 0.75, 0.9]
+  parallel_evaluations: 2
   use_llm_feedback: false
 
 # Evolution settings
-diff_based_evolution: false
-allow_full_rewrites: true
+diff_based_evolution: true
+allow_full_rewrites: false
+max_code_length: 15000
 
 # OpenEvolve Configuration for Barcode Preprocessing
 # 优化配置：增强精英保存和稳定性机制
@@ -64,7 +75,7 @@ allow_full_rewrites: true
 elitism:
   enabled: true
   elite_size: 3  # 保存前3名精英
-  elite_preservation_ratio: 0.5  # 50%的精英在每代中保持不变
+  elite_preservation_ratio: 0.3  # 30%的精英在每代中保持不变
   score_threshold: 80.0  # 只有得分>80的程序才能成为精英
 
 # 改进的选择和评估机制
@@ -74,13 +85,13 @@ selection:
   
 evaluation:
   timeout: 60  # 增加超时时间避免好程序被误杀
-  retries: 2   # 失败重试机制
+  retries: 5   # 失败重试机制
   stability_check: true  # 启用稳定性检查
   
 # 变异和交叉参数优化
 mutation:
-  rate: 0.3  # 适中的变异率
-  strength: 0.7  # 中等强度变异，避免过度破坏
+  rate: 0.2  # 降低变异率减少破坏性
+  strength: 0.5  # 降低变异强度
   
 crossover:
   rate: 0.6  # 增加交叉率促进优秀特征组合
@@ -88,8 +99,8 @@ crossover:
 # 检查点和日志配置
 checkpointing:
   enabled: true
-  interval: 5  # 每5代保存一次
-  keep_best_always: true  # 始终保留历史最佳
+  retain_all: true        # ← 关闭自动清理
+  keep_best_always: false  # 始终保留历史最佳
   backup_elite: true  # 备份精英程序
   
 logging:
@@ -99,8 +110,8 @@ logging:
   
 # 终止条件
 termination:
-  max_generations_without_improvement: 10  # 10代无改进则停止
-  target_score: 98.0  # 目标分数
+  max_generations_without_improvement: 15  # 15代无改进则停止
+  target_score: 120.0  # 目标分数
   convergence_threshold: 0.01  # 收敛阈值
 
 # 特定于条形码预处理的配置

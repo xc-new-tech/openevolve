@@ -1,0 +1,152 @@
+# Enhanced Configuration for barcode image preprocessing evolution
+# Target: Evolve image preprocessing pipeline to improve barcode decoding success rate
+# Version 2.0 - Enhanced with more iterations and improved strategy
+
+# General settings - Extended for better exploration
+max_iterations: 60  # Increased from 30
+checkpoint_interval: 10
+log_level: "INFO"
+max_code_length: 20000  # Increased from default 10000 to handle complex algorithms
+
+# LLM configuration - Updated model mix
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  temperature: 0.4
+  top_p: 0.9
+  max_tokens: 15000  # Increased for more complex code
+  timeout: 150  # Increased timeout
+  models:
+    - name: "openai/gpt-4o"
+      weight: 0.3
+    - name: "openai/gpt-4.1"
+      weight: 0.5
+    - name: "anthropic/claude-sonnet-4"
+      weight: 0.2
+  # 评估模型
+  evaluator_models:
+    - name: "anthropic/claude-sonnet-4"
+      weight: 1.0
+
+# Enhanced algorithm pool with more operators
+algorithm_pool:
+  image_reading:
+    - "cv2.imread with error handling"
+    - "PIL.Image.open with fallback"
+    - "robust grayscale conversion"
+  
+  preprocessing:
+    - "adaptive Gaussian blur"
+    - "bilateral filter with edge preservation"
+    - "fastNlMeansDenoising for heavy noise"
+    - "median filter for salt-pepper noise"
+    - "Wiener filter for specific noise patterns"
+  
+  enhancement:
+    - "CLAHE (Contrast Limited Adaptive Histogram Equalization)"
+    - "gamma correction with auto-selection"
+    - "histogram stretching"
+    - "local contrast enhancement"
+    - "unsharp masking for edge enhancement"
+  
+  binarization:
+    - "Otsu's method with preprocessing"
+    - "adaptive thresholding (Gaussian/Mean)"
+    - "Sauvola's method for uneven illumination"
+    - "Niblack's method for local thresholding" 
+    - "multi-level Otsu for complex backgrounds"
+    - "hybrid thresholding (combine multiple methods)"
+  
+  geometric_correction:
+    - "Hough line-based skew detection"
+    - "projection profile skew estimation"
+    - "RANSAC-based line fitting"
+    - "perspective correction for distorted codes"
+    - "rotation with sub-pixel accuracy"
+  
+  morphological_ops:
+    - "opening for noise removal"
+    - "closing for gap filling"
+    - "morphological gradient for edge detection"
+    - "top-hat transform for bright features"
+    - "adaptive kernel sizing based on barcode type"
+  
+  barcode_specific:
+    - "1D barcode structure analysis"
+    - "2D barcode finder pattern detection"
+    - "quiet zone enhancement"
+    - "bar width normalization"
+    - "module size estimation and correction"
+
+# Enhanced evolution strategy
+evolution:
+  population_size: 8  # Increased from 5
+  elite_count: 3      # Keep more elite solutions
+  mutation_rate: 0.7  # Higher mutation for more exploration
+  crossover_rate: 0.6 # Higher crossover rate
+  
+  # Multi-objective optimization weights
+  objectives:
+    success_rate: 0.7      # Primary objective
+    processing_speed: 0.2   # Secondary objective  
+    hard_case_bonus: 0.1   # Bonus for solving difficult cases
+  
+  # Island evolution parameters
+  islands:
+    count: 5
+    migration_interval: 5
+    migration_rate: 0.2
+    
+  # Advanced operators
+  operators:
+    - "tournament_selection"
+    - "uniform_crossover"
+    - "gaussian_mutation"
+    - "local_search_refinement"
+    - "adaptive_parameter_tuning"
+
+# Target performance metrics - More ambitious goals
+target_metrics:
+  baseline_success_rate: 47.78  # Current baseline
+  target_success_rate: 85.0     # Ambitious target (up from 76.67%)
+  target_processing_speed: 800   # images/second
+  max_processing_time: 0.5      # seconds per image
+  
+  # Hard case targets
+  combined_distortion_success: 60.0  # Success rate on combined_* images
+  code128_noisy_success: 70.0        # Success rate on noisy code128
+  code39_rotated_success: 75.0       # Success rate on rotated code39
+
+# Evaluation criteria - Enhanced with difficulty weighting
+evaluation:
+  script: "evaluator.py"
+  timeout: 300  # 5 minutes timeout
+  parallel: true
+  save_failures: true
+  
+  # Hard case patterns for bonus scoring
+  hard_cases:
+    - "combined_*"
+    - "*code128*03*" 
+    - "*code39*01*"
+    - "enhanced_*"
+  
+  # Scoring weights
+  scoring:
+    success_rate_weight: 0.6
+    speed_weight: 0.2
+    improvement_weight: 0.1
+    hard_case_weight: 0.1
+
+# Advanced logging and analysis
+analysis:
+  save_intermediate_results: true
+  track_algorithm_usage: true
+  performance_profiling: true
+  failure_pattern_analysis: true
+  
+  # Reports to generate
+  reports:
+    - "evolution_progress"
+    - "algorithm_effectiveness" 
+    - "failure_analysis"
+    - "performance_metrics" 

@@ -1,0 +1,392 @@
+{
+  "timestamp": "2025-06-20T14:24:20.365745",
+  "test_results": {
+    "original": {
+      "algorithm_name": "Original",
+      "test_mode": "original",
+      "total_images": 90,
+      "successful_decodes": 43,
+      "success_rate": 0.4777777777777778,
+      "processing_time": 0.07605600357055664,
+      "throughput": 1183.3385370624635,
+      "memory_usage": 21.1,
+      "cpu_usage": 21.5,
+      "decoded_barcodes_count": 43,
+      "failed_images": [
+        "enhanced_combined_qr_01_https:__ex.png",
+        "enhanced_combined_qr_03_Test-QR-Co.png",
+        "enhanced_noisy_code128_01_1234567890.png",
+        "combined_code39_03_TEST-CODE3.png",
+        "enhanced_noisy_qr_02_Hello-Worl.png",
+        "noisy_code128_02_HELLO-WORL.png",
+        "enhanced_combined_code39_01_123456789.png",
+        "enhanced_noisy_code39_01_123456789.png",
+        "noisy_code39_03_TEST-CODE3.png",
+        "noisy_code39_02_HELLO-WORL.png",
+        "noisy_code128_03_TEST-BARCO.png",
+        "enhanced_rotated_code128_03_TEST-BARCO.png",
+        "combined_code39_02_HELLO-WORL.png",
+        "enhanced_blurred_code39_01_123456789.png",
+        "noisy_code128_01_1234567890.png",
+        "enhanced_clean_code128_02_HELLO-WORL.png",
+        "enhanced_clean_code128_03_TEST-BARCO.png",
+        "enhanced_clean_code39_03_TEST-CODE3.png",
+        "enhanced_noisy_qr_03_Test-QR-Co.png",
+        "enhanced_noisy_qr_01_https:__ex.png",
+        "enhanced_blurred_code39_03_TEST-CODE3.png",
+        "enhanced_blurred_code39_02_HELLO-WORL.png",
+        "enhanced_noisy_code128_02_HELLO-WORL.png",
+        "enhanced_combined_qr_02_Hello-Worl.png",
+        "enhanced_clean_code39_02_HELLO-WORL.png",
+        "combined_code128_01_1234567890.png",
+        "enhanced_combined_code39_02_HELLO-WORL.png",
+        "enhanced_noisy_code128_03_TEST-BARCO.png",
+        "noisy_code39_01_123456789.png",
+        "combined_code39_01_123456789.png",
+        "enhanced_clean_code39_01_123456789.png",
+        "combined_qr_01_https:__ex.png",
+        "noisy_qr_02_Hello-Worl.png",
+        "enhanced_combined_code128_02_HELLO-WORL.png",
+        "combined_qr_03_Test-QR-Co.png",
+        "enhanced_combined_code39_03_TEST-CODE3.png",
+        "enhanced_combined_code128_01_1234567890.png",
+        "enhanced_combined_code128_03_TEST-BARCO.png",
+        "noisy_qr_03_Test-QR-Co.png",
+        "combined_qr_02_Hello-Worl.png",
+        "noisy_qr_01_https:__ex.png",
+        "combined_code128_02_HELLO-WORL.png",
+        "enhanced_noisy_code39_02_HELLO-WORL.png",
+        "enhanced_blurred_code128_02_HELLO-WORL.png",
+        "combined_code128_03_TEST-BARCO.png",
+        "enhanced_blurred_code128_03_TEST-BARCO.png",
+        "enhanced_noisy_code39_03_TEST-CODE3.png"
+      ],
+      "type_statistics": {
+        "QRCODE": {
+          "total": 30,
+          "successful": 18,
+          "failed": 12,
+          "detected_types": {
+            "QRCODE": 18
+          },
+          "success_rate": 0.6
+        },
+        "CODE128": {
+          "total": 30,
+          "successful": 13,
+          "failed": 17,
+          "detected_types": {
+            "CODE128": 13
+          },
+          "success_rate": 0.43333333333333335
+        },
+        "CODE39": {
+          "total": 30,
+          "successful": 12,
+          "failed": 18,
+          "detected_types": {
+            "CODE39": 12
+          },
+          "success_rate": 0.4
+        }
+      },
+      "quality_metrics": {
+        "average_processing_time": 0.012499221165974935,
+        "stability_score": 0.9923456790123457,
+        "time_consistency": 0.990779861464117,
+        "total_barcode_types": 3,
+        "successful_types": 3
+      },
+      "timestamp": "2025-06-20T14:24:15.848055"
+    },
+    "enhanced": {
+      "algorithm_name": "Enhanced",
+      "test_mode": "enhanced",
+      "total_images": 90,
+      "successful_decodes": 69,
+      "success_rate": 0.7666666666666667,
+      "processing_time": 0.07876992225646973,
+      "throughput": 1142.5680947984927,
+      "memory_usage": 21.1,
+      "cpu_usage": 10.4,
+      "decoded_barcodes_count": 71,
+      "failed_images": [
+        "processed_combined_qr_02_Hello-Worl.png",
+        "processed_combined_code39_01_123456789.png",
+        "processed_rotated_code128_03_TEST-BARCO.png",
+        "processed_enhanced_combined_code128_03_TEST-BARCO.png",
+        "processed_enhanced_combined_qr_03_Test-QR-Co.png",
+        "processed_combined_qr_01_https:__ex.png",
+        "processed_combined_qr_03_Test-QR-Co.png",
+        "processed_enhanced_combined_qr_01_https:__ex.png",
+        "processed_clean_code128_03_TEST-BARCO.png",
+        "processed_combined_code39_03_TEST-CODE3.png",
+        "processed_noisy_code128_02_HELLO-WORL.png",
+        "processed_combined_code39_02_HELLO-WORL.png",
+        "processed_combined_code128_01_1234567890.png",
+        "processed_noisy_code128_03_TEST-BARCO.png",
+        "processed_combined_code128_03_TEST-BARCO.png",
+        "processed_combined_code128_02_HELLO-WORL.png",
+        "processed_blurred_code128_03_TEST-BARCO.png",
+        "processed_enhanced_noisy_code128_02_HELLO-WORL.png",
+        "processed_enhanced_clean_code39_01_123456789.png",
+        "processed_enhanced_blurred_code128_03_TEST-BARCO.png",
+        "processed_enhanced_noisy_code128_03_TEST-BARCO.png"
+      ],
+      "type_statistics": {
+        "QRCODE": {
+          "total": 30,
+          "successful": 25,
+          "failed": 5,
+          "detected_types": {
+            "QRCODE": 25
+          },
+          "success_rate": 0.8333333333333334
+        },
+        "CODE39": {
+          "total": 30,
+          "successful": 26,
+          "failed": 4,
+          "detected_types": {
+            "CODE39": 26
+          },
+          "success_rate": 0.8666666666666667
+        },
+        "CODE128": {
+          "total": 30,
+          "successful": 18,
+          "failed": 12,
+          "detected_types": {
+            "CODE128": 18
+          },
+          "success_rate": 0.6
+        }
+      },
+      "quality_metrics": {
+        "average_processing_time": 0.012965112262301974,
+        "stability_score": 0.9859259259259259,
+        "time_consistency": 0.9889458102717285,
+        "total_barcode_types": 3,
+        "successful_types": 3
+      },
+      "timestamp": "2025-06-20T14:24:20.362886"
+    },
+    "comparison": {
+      "baseline_result": {
+        "algorithm_name": "Original",
+        "test_mode": "original",
+        "total_images": 90,
+        "successful_decodes": 43,
+        "success_rate": 0.4777777777777778,
+        "processing_time": 0.07605600357055664,
+        "throughput": 1183.3385370624635,
+        "memory_usage": 21.1,
+        "cpu_usage": 21.5,
+        "decoded_barcodes_count": 43,
+        "failed_images": [
+          "enhanced_combined_qr_01_https:__ex.png",
+          "enhanced_combined_qr_03_Test-QR-Co.png",
+          "enhanced_noisy_code128_01_1234567890.png",
+          "combined_code39_03_TEST-CODE3.png",
+          "enhanced_noisy_qr_02_Hello-Worl.png",
+          "noisy_code128_02_HELLO-WORL.png",
+          "enhanced_combined_code39_01_123456789.png",
+          "enhanced_noisy_code39_01_123456789.png",
+          "noisy_code39_03_TEST-CODE3.png",
+          "noisy_code39_02_HELLO-WORL.png",
+          "noisy_code128_03_TEST-BARCO.png",
+          "enhanced_rotated_code128_03_TEST-BARCO.png",
+          "combined_code39_02_HELLO-WORL.png",
+          "enhanced_blurred_code39_01_123456789.png",
+          "noisy_code128_01_1234567890.png",
+          "enhanced_clean_code128_02_HELLO-WORL.png",
+          "enhanced_clean_code128_03_TEST-BARCO.png",
+          "enhanced_clean_code39_03_TEST-CODE3.png",
+          "enhanced_noisy_qr_03_Test-QR-Co.png",
+          "enhanced_noisy_qr_01_https:__ex.png",
+          "enhanced_blurred_code39_03_TEST-CODE3.png",
+          "enhanced_blurred_code39_02_HELLO-WORL.png",
+          "enhanced_noisy_code128_02_HELLO-WORL.png",
+          "enhanced_combined_qr_02_Hello-Worl.png",
+          "enhanced_clean_code39_02_HELLO-WORL.png",
+          "combined_code128_01_1234567890.png",
+          "enhanced_combined_code39_02_HELLO-WORL.png",
+          "enhanced_noisy_code128_03_TEST-BARCO.png",
+          "noisy_code39_01_123456789.png",
+          "combined_code39_01_123456789.png",
+          "enhanced_clean_code39_01_123456789.png",
+          "combined_qr_01_https:__ex.png",
+          "noisy_qr_02_Hello-Worl.png",
+          "enhanced_combined_code128_02_HELLO-WORL.png",
+          "combined_qr_03_Test-QR-Co.png",
+          "enhanced_combined_code39_03_TEST-CODE3.png",
+          "enhanced_combined_code128_01_1234567890.png",
+          "enhanced_combined_code128_03_TEST-BARCO.png",
+          "noisy_qr_03_Test-QR-Co.png",
+          "combined_qr_02_Hello-Worl.png",
+          "noisy_qr_01_https:__ex.png",
+          "combined_code128_02_HELLO-WORL.png",
+          "enhanced_noisy_code39_02_HELLO-WORL.png",
+          "enhanced_blurred_code128_02_HELLO-WORL.png",
+          "combined_code128_03_TEST-BARCO.png",
+          "enhanced_blurred_code128_03_TEST-BARCO.png",
+          "enhanced_noisy_code39_03_TEST-CODE3.png"
+        ],
+        "type_statistics": {
+          "QRCODE": {
+            "total": 30,
+            "successful": 18,
+            "failed": 12,
+            "detected_types": {
+              "QRCODE": 18
+            },
+            "success_rate": 0.6
+          },
+          "CODE128": {
+            "total": 30,
+            "successful": 13,
+            "failed": 17,
+            "detected_types": {
+              "CODE128": 13
+            },
+            "success_rate": 0.43333333333333335
+          },
+          "CODE39": {
+            "total": 30,
+            "successful": 12,
+            "failed": 18,
+            "detected_types": {
+              "CODE39": 12
+            },
+            "success_rate": 0.4
+          }
+        },
+        "quality_metrics": {
+          "average_processing_time": 0.012499221165974935,
+          "stability_score": 0.9923456790123457,
+          "time_consistency": 0.990779861464117,
+          "total_barcode_types": 3,
+          "successful_types": 3
+        },
+        "timestamp": "2025-06-20T14:24:15.848055"
+      },
+      "enhanced_result": {
+        "algorithm_name": "Enhanced",
+        "test_mode": "enhanced",
+        "total_images": 90,
+        "successful_decodes": 69,
+        "success_rate": 0.7666666666666667,
+        "processing_time": 0.07876992225646973,
+        "throughput": 1142.5680947984927,
+        "memory_usage": 21.1,
+        "cpu_usage": 10.4,
+        "decoded_barcodes_count": 71,
+        "failed_images": [
+          "processed_combined_qr_02_Hello-Worl.png",
+          "processed_combined_code39_01_123456789.png",
+          "processed_rotated_code128_03_TEST-BARCO.png",
+          "processed_enhanced_combined_code128_03_TEST-BARCO.png",
+          "processed_enhanced_combined_qr_03_Test-QR-Co.png",
+          "processed_combined_qr_01_https:__ex.png",
+          "processed_combined_qr_03_Test-QR-Co.png",
+          "processed_enhanced_combined_qr_01_https:__ex.png",
+          "processed_clean_code128_03_TEST-BARCO.png",
+          "processed_combined_code39_03_TEST-CODE3.png",
+          "processed_noisy_code128_02_HELLO-WORL.png",
+          "processed_combined_code39_02_HELLO-WORL.png",
+          "processed_combined_code128_01_1234567890.png",
+          "processed_noisy_code128_03_TEST-BARCO.png",
+          "processed_combined_code128_03_TEST-BARCO.png",
+          "processed_combined_code128_02_HELLO-WORL.png",
+          "processed_blurred_code128_03_TEST-BARCO.png",
+          "processed_enhanced_noisy_code128_02_HELLO-WORL.png",
+          "processed_enhanced_clean_code39_01_123456789.png",
+          "processed_enhanced_blurred_code128_03_TEST-BARCO.png",
+          "processed_enhanced_noisy_code128_03_TEST-BARCO.png"
+        ],
+        "type_statistics": {
+          "QRCODE": {
+            "total": 30,
+            "successful": 25,
+            "failed": 5,
+            "detected_types": {
+              "QRCODE": 25
+            },
+            "success_rate": 0.8333333333333334
+          },
+          "CODE39": {
+            "total": 30,
+            "successful": 26,
+            "failed": 4,
+            "detected_types": {
+              "CODE39": 26
+            },
+            "success_rate": 0.8666666666666667
+          },
+          "CODE128": {
+            "total": 30,
+            "successful": 18,
+            "failed": 12,
+            "detected_types": {
+              "CODE128": 18
+            },
+            "success_rate": 0.6
+          }
+        },
+        "quality_metrics": {
+          "average_processing_time": 0.012965112262301974,
+          "stability_score": 0.9859259259259259,
+          "time_consistency": 0.9889458102717285,
+          "total_barcode_types": 3,
+          "successful_types": 3
+        },
+        "timestamp": "2025-06-20T14:24:20.362886"
+      },
+      "improvement_metrics": {
+        "success_rate_improvement": 0.2888888888888889,
+        "throughput_improvement": -40.770442263970835,
+        "processing_time_improvement": -0.002713918685913086,
+        "memory_efficiency": 0.0
+      },
+      "quality_improvement": {
+        "average_processing_time": 0.0004658910963270396,
+        "stability_score": -0.006419753086419844,
+        "time_consistency": -0.0018340511923885527,
+        "total_barcode_types": 0,
+        "successful_types": 0
+      },
+      "performance_impact": {
+        "speed_factor": 0.9655462566399807,
+        "time_reduction_percent": -3.5683161861054162,
+        "success_rate_delta": 28.888888888888893
+      },
+      "overall_score": 50.0,
+      "recommendation": "推荐：算法有明显改进，值得采用"
+    }
+  },
+  "summary": {
+    "total_tests_run": 2,
+    "tests_completed": [
+      "original",
+      "enhanced",
+      "comparison"
+    ],
+    "performance_summary": {
+      "original": {
+        "success_rate": 0.4777777777777778,
+        "throughput": 1183.3385370624635,
+        "total_images": 90
+      },
+      "enhanced": {
+        "success_rate": 0.7666666666666667,
+        "throughput": 1142.5680947984927,
+        "total_images": 90
+      },
+      "comparison": {
+        "overall_score": 50.0,
+        "recommendation": "推荐：算法有明显改进，值得采用",
+        "success_improvement": 0.2888888888888889
+      }
+    }
+  }
+}

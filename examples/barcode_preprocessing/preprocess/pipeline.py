@@ -7,6 +7,7 @@ import json
 import os
 from datetime import datetime
 import logging
+import time
 
 from .denoise import *
 from .enhance import *
@@ -14,27 +15,57 @@ from .binarize import *
 from .morphology import *
 from .geometry import *
 
+# 尝试导入性能优化模块
+try:
+    from .performance_optimizer import (
+        OptimizedPipelineManager, 
+        PerformanceProfiler, 
+        CacheManager,
+        MemoryManager
+    )
+    PERFORMANCE_OPTIMIZATION_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_OPTIMIZATION_AVAILABLE = False
+
 
 class ProcessingPipeline:
     """
     Configurable image processing pipeline
     """
     
-    def __init__(self, pipeline_config=None, name="default"):
+    def __init__(self, pipeline_config=None, name="default", 
+                 enable_optimization=True, enable_cache=True, enable_profiling=False):
         """
         Initialize processing pipeline
         
         Args:
             pipeline_config: List of processing steps or path to config file
             name: Pipeline name for logging
+            enable_optimization: Enable performance optimizations
+            enable_cache: Enable result caching
+            enable_profiling: Enable performance profiling
         """
         self.name = name
         self.steps = []
         self.metadata = {
             'created': datetime.now().isoformat(),
             'name': name,
-            'version': '1.0.0'
+            'version': '2.0.0'  # Updated version with optimization
         }
+        
+        # Performance optimization components
+        self.optimization_enabled = enable_optimization and PERFORMANCE_OPTIMIZATION_AVAILABLE
+        if self.optimization_enabled:
+            self.optimizer = OptimizedPipelineManager(
+                enable_cache=enable_cache,
+                enable_profiling=enable_profiling
+            )
+            self.profiler = self.optimizer.profiler
+            self.cache_manager = self.optimizer.cache_manager
+        else:
+            self.optimizer = None
+            self.profiler = None
+            self.cache_manager = None
         
         if pipeline_config is not None:
             self.load_config(pipeline_config)
@@ -94,23 +125,80 @@ class ProcessingPipeline:
         }
         self.steps.append(step)
     
-    def process_image(self, image, debug=False):
+    def process_image(self, image, debug=False, use_optimization=None):
         """
         Process image through the pipeline
         
         Args:
             image: Input image (BGR or grayscale)
             debug: Whether to return intermediate results
+            use_optimization: Override optimization setting for this call
             
         Returns:
             Processed image (and intermediate results if debug=True)
         """
+        # Determine if optimization should be used
+        optimization_enabled = (use_optimization if use_optimization is not None 
+                              else self.optimization_enabled)
+        
         # Convert to grayscale if needed
         if len(image.shape) == 3:
             current = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         else:
             current = image.copy()
         
+        if optimization_enabled and self.optimizer:
+            # Use optimized processing
+            return self._process_image_optimized(current, debug)
+        else:
+            # Use traditional processing
+            return self._process_image_traditional(current, debug)
+    
+    def _process_image_optimized(self, image, debug=False):
+        """
+        Process image using optimization features
+        """
+        # Convert pipeline steps to algorithm functions
+        algorithms = {}
+        for i, step in enumerate(self.steps):
+            try:
+                func = self._get_function(step['module'], step['function'])
+                params = step.get('params', {})
+                
+                # Create parameterized function
+                def parameterized_func(img, _func=func, _params=params):
+                    return _func(img, **_params)
+                
+                # Use step index as algorithm name for optimization
+                algorithm_name = f"{step['module']}_{step['function']}_{i}"
+                algorithms[algorithm_name] = parameterized_func
+                
+            except Exception as e:
+                self.logger.error(f"Error preparing step {i}: {e}")
+        
+        # Process with optimization
+        start_time = time.time()
+        result = self.optimizer.process_with_optimization(image, algorithms)
+        processing_time = time.time() - start_time
+        
+        if self.profiler:
+            self.logger.info(f"Optimized processing completed in {processing_time*1000:.1f}ms")
+        
+        if debug:
+            intermediate_results = [('input', image.copy()), ('output', result.copy())]
+            # Add performance info if available
+            if self.profiler:
+                performance_info = self.optimizer.get_performance_summary()
+                intermediate_results.append(('performance', performance_info))
+            return result, intermediate_results
+        
+        return result
+    
+    def _process_image_traditional(self, image, debug=False):
+        """
+        Process image using traditional sequential processing
+        """
+        current = image.copy()
         intermediate_results = [('input', current.copy())] if debug else []
         
         for i, step in enumerate(self.steps):
@@ -124,15 +212,22 @@ class ProcessingPipeline:
                 # Get function from module
                 func = self._get_function(step['module'], step['function'])
                 
-                # Apply function
+                # Apply function with timing if profiler is available
                 params = step.get('params', {})
+                step_name = f"{step['module']}.{step['function']}"
+                
+                if self.profiler:
+                    self.profiler.start_timing(step_name)
+                
                 current = func(current, **params)
                 
+                if self.profiler:
+                    self.profiler.end_timing(step_name)
+                
                 if debug:
-                    step_name = f"{step['module']}.{step['function']}"
                     intermediate_results.append((step_name, current.copy()))
                 
-                self.logger.debug(f"Applied step {i}: {step['module']}.{step['function']}")
+                self.logger.debug(f"Applied step {i}: {step_name}")
                 
             except Exception as e:
                 self.logger.error(f"Error in step {i}: {e}")
