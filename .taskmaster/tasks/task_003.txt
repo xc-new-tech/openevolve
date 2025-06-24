@@ -1,0 +1,16 @@
+# Task ID: 3
+# Title: 边缘保护滤波算法
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: 实现导向滤波、边缘保护平滑滤波和各向异性扩散滤波
+# Details:
+新建preprocess/edge_preserving.py模块，实现三种边缘保护算法：
+1. 导向滤波(Guided Filter) - 基于引导图像的边缘保护平滑
+2. 边缘保护平滑滤波 - 自适应的边缘保护机制
+3. 各向异性扩散滤波 - Perona-Malik扩散模型
+
+这些算法可以在去噪的同时保持条形码边缘的锐利度。
+
+# Test Strategy:
+测试算法在模糊图像上的边缘保护效果，确保滤波后条形码边缘依然清晰可辨。

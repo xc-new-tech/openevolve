@@ -1,0 +1,16 @@
+# Task ID: 5
+# Title: 深度学习去噪模型
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: 集成DnCNN、FFDNet等深度去噪模型
+# Details:
+在preprocess/denoise.py中添加深度学习去噪功能：
+1. DnCNN模型集成 - 经典的深度去噪网络
+2. FFDNet集成 - 可变噪声强度的去噪模型
+3. 自训练轻量模型 - 针对条形码场景优化的小模型
+
+提供预训练模型和在线推理功能，支持CPU运行。
+
+# Test Strategy:
+对比传统去噪方法，验证深度学习方法在复杂噪声环境下的优势。

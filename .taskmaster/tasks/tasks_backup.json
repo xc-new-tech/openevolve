@@ -1,0 +1,151 @@
+{
+  "version": "2.0.0",
+  "tags": {
+    "master": {
+      "tasks": [
+        {
+          "id": 1,
+          "title": "传统光照校正算法实现",
+          "description": "实现Multi-Scale Retinex (MSR)、Single Scale Retinex (SSR)、自适应伽马校正和CLAHE等光照校正算法",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [],
+          "details": "在preprocess目录下扩展现有模块，添加advanced_illumination.py文件，实现四种主要的光照校正算法：\n1. Multi-Scale Retinex (MSR) - 多尺度视网膜增强算法\n2. Single Scale Retinex (SSR) - 单尺度视网膜增强\n3. 自适应伽马校正 - 基于图像统计特性的动态伽马调整\n4. CLAHE增强版 - 对比度限制自适应直方图均衡化\n\n这些算法主要解决光照不均、阴影干扰等问题，提高条形码在复杂光照环境下的识别率。",
+          "testStrategy": "使用sample_images中的各种光照条件测试图像验证算法效果，确保在不同光照条件下都能改善图像质量。",
+          "subtasks": []
+        },
+        {
+          "id": 2,
+          "title": "高级去噪算法扩展",
+          "description": "实现非局部均值去噪、双边滤波增强版、维纳滤波器和形态学运算组合等高级去噪技术",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [],
+          "details": "扩展preprocess/denoise.py模块，添加更强大的去噪算法：\n1. 非局部均值去噪(Non-local Means) - 利用图像自相似性的强力去噪\n2. 双边滤波增强版 - 改进的边缘保护滤波\n3. 维纳滤波器 - 频域噪声抑制\n4. 形态学开闭运算组合 - 针对条形码特征的结构化去噪\n\n重点优化噪声环境下的条形码识别效果。",
+          "testStrategy": "使用noisy_开头的测试图像验证去噪效果，对比PSNR和SSIM指标，确保去噪的同时保持条形码特征清晰。",
+          "subtasks": []
+        },
+        {
+          "id": 3,
+          "title": "边缘保护滤波算法",
+          "description": "实现导向滤波、边缘保护平滑滤波和各向异性扩散滤波",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [],
+          "details": "新建preprocess/edge_preserving.py模块，实现三种边缘保护算法：\n1. 导向滤波(Guided Filter) - 基于引导图像的边缘保护平滑\n2. 边缘保护平滑滤波 - 自适应的边缘保护机制\n3. 各向异性扩散滤波 - Perona-Malik扩散模型\n\n这些算法可以在去噪的同时保持条形码边缘的锐利度。",
+          "testStrategy": "测试算法在模糊图像上的边缘保护效果，确保滤波后条形码边缘依然清晰可辨。",
+          "subtasks": []
+        },
+        {
+          "id": 4,
+          "title": "深度学习超分辨率集成",
+          "description": "集成Real-ESRGAN、SwinIR和轻量级SRCNN进行图像超分辨率处理",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [],
+          "details": "新建preprocess/super_resolution.py模块，集成三种超分辨率模型：\n1. Real-ESRGAN - 针对真实世界退化的超分辨率\n2. SwinIR - 基于Swin Transformer的图像恢复\n3. 轻量级SRCNN - 适合实时处理的CNN模型\n\n提供CPU和GPU两种运行模式，优先使用CPU确保兼容性。处理小尺寸或低分辨率的条形码图像。",
+          "testStrategy": "使用低分辨率测试图像验证超分辨率效果，确保放大后的图像质量和识别率都有显著提升。",
+          "subtasks": []
+        },
+        {
+          "id": 5,
+          "title": "深度学习去噪模型",
+          "description": "集成DnCNN、FFDNet等深度去噪模型",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [],
+          "details": "在preprocess/denoise.py中添加深度学习去噪功能：\n1. DnCNN模型集成 - 经典的深度去噪网络\n2. FFDNet集成 - 可变噪声强度的去噪模型\n3. 自训练轻量模型 - 针对条形码场景优化的小模型\n\n提供预训练模型和在线推理功能，支持CPU运行。",
+          "testStrategy": "对比传统去噪方法，验证深度学习方法在复杂噪声环境下的优势。",
+          "subtasks": []
+        },
+        {
+          "id": 6,
+          "title": "条形码专用几何校正",
+          "description": "实现方向检测、透视变换校正、条形码定位和多尺度检测算法",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [],
+          "details": "新建preprocess/barcode_specific.py模块，实现条形码专用算法：\n1. 自动方向检测和旋转校正 - 基于Hough变换和边缘方向\n2. 透视变换校正 - 针对斜视角度拍摄的条形码\n3. 条形码区域精确定位 - ROI提取和精细化\n4. 多尺度检测 - 同时处理不同尺寸的条形码\n\n这些算法专门针对条形码的几何特征进行优化。",
+          "testStrategy": "使用rotated_开头的测试图像验证几何校正效果，确保各种角度和透视的条形码都能被正确校正。",
+          "subtasks": []
+        },
+        {
+          "id": 7,
+          "title": "自适应参数调优系统",
+          "description": "实现基于图像质量的参数自动选择和动态阈值调整",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [1, 2, 3],
+          "details": "新建preprocess/adaptive_tuning.py模块：\n1. 图像质量评估 - 基于梯度、方差、对比度等指标\n2. 参数自动选择 - 根据图像特征选择最优算法参数\n3. 动态阈值调整 - 自适应的二值化阈值\n4. 算法组合优化 - 智能选择算法执行顺序\n\n让预处理管道能够根据不同输入图像自动调整策略。",
+          "testStrategy": "测试系统在various类型图像上的自适应能力，验证自动参数选择的效果。",
+          "subtasks": []
+        },
+        {
+          "id": 8,
+          "title": "管道性能优化",
+          "description": "优化算法执行顺序、实现并行处理、内存优化和缓存机制",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [1, 2, 3, 6],
+          "details": "优化preprocess/pipeline.py核心管道：\n1. 算法执行顺序优化 - 基于依赖关系和性能分析\n2. 并行处理实现 - 多线程/多进程加速\n3. 内存使用优化 - 减少中间结果存储\n4. 智能缓存机制 - 避免重复计算\n5. GPU加速支持 - 可选的GPU加速路径\n\n确保处理速度满足<100ms的要求。",
+          "testStrategy": "使用性能分析工具测试处理速度和内存使用，确保达到性能指标。",
+          "subtasks": []
+        },
+        {
+          "id": 9,
+          "title": "算法模块化重构",
+          "description": "重构现有preprocess模块，提高代码复用性和维护性",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [],
+          "details": "重构preprocess目录结构：\n1. 统一接口设计 - 所有算法遵循相同的输入输出规范\n2. 参数配置标准化 - 统一的配置文件格式\n3. 错误处理增强 - 完善的异常处理和回退机制\n4. 日志系统集成 - 详细的处理过程记录\n5. 单元测试完善 - 每个算法的独立测试\n\n提高代码质量和可维护性。",
+          "testStrategy": "运行完整的单元测试套件，确保重构后功能完整性和稳定性。",
+          "subtasks": []
+        },
+        {
+          "id": 10,
+          "title": "评估体系增强",
+          "description": "完善测试用例、性能基准测试和错误分析工具",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [1, 2, 3, 4, 5, 6],
+          "details": "增强evaluator.py和测试框架：\n1. 扩展测试用例集 - 更多类型和难度的条形码图像\n2. 性能基准测试 - 标准化的性能评估\n3. 错误分析工具 - 自动诊断失败原因\n4. 算法对比分析 - 不同算法效果对比\n5. 实时监控面板 - 可视化性能指标\n\n建立完整的评估和监控体系。",
+          "testStrategy": "验证评估系统的准确性和完整性，确保能够正确评估算法改进效果。",
+          "subtasks": []
+        },
+        {
+          "id": 11,
+          "title": "配置管理优化",
+          "description": "优化config.yaml配置系统，支持动态配置和算法组合",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [7, 8],
+          "details": "增强配置管理系统：\n1. 分层配置支持 - 全局、算法、实例级配置\n2. 动态配置热重载 - 运行时配置更新\n3. 配置模板系统 - 预定义的最佳实践配置\n4. 配置验证机制 - 自动检查配置有效性\n5. 配置文档生成 - 自动生成配置说明\n\n让配置管理更加灵活和用户友好。",
+          "testStrategy": "测试各种配置组合的有效性，验证配置系统的稳定性和易用性。",
+          "subtasks": []
+        },
+        {
+          "id": 12,
+          "title": "文档和使用指南",
+          "description": "编写完整的算法文档、使用指南和最佳实践",
+          "status": "pending",
+          "priority": "low",
+          "dependencies": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+          "details": "创建完整的文档体系：\n1. 算法原理文档 - 每个算法的理论基础和适用场景\n2. 使用指南 - 详细的使用说明和示例\n3. 最佳实践文档 - 不同场景下的推荐配置\n4. 故障排除指南 - 常见问题和解决方案\n5. API参考文档 - 完整的接口说明\n\n确保用户和开发者能够快速上手和深入使用。",
+          "testStrategy": "根据文档进行完整的使用流程测试，验证文档的准确性和完整性。",
+          "subtasks": []
+        }
+      ],
+      "metadata": {
+        "name": "条形码预处理算法优化",
+        "description": "基于OpenEvolve框架优化条形码图像预处理管道，突破96.7分性能瓶颈",
+        "created": "2025-01-18T10:30:00Z",
+        "updated": "2025-01-18T10:30:00Z"
+      }
+    }
+  },
+  "global": {
+    "defaultTag": "master",
+    "version": "2.0.0"
+  }
+} 

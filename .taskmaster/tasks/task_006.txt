@@ -1,0 +1,17 @@
+# Task ID: 6
+# Title: 条形码专用几何校正
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: 实现方向检测、透视变换校正、条形码定位和多尺度检测算法
+# Details:
+新建preprocess/barcode_specific.py模块，实现条形码专用算法：
+1. 自动方向检测和旋转校正 - 基于Hough变换和边缘方向
+2. 透视变换校正 - 针对斜视角度拍摄的条形码
+3. 条形码区域精确定位 - ROI提取和精细化
+4. 多尺度检测 - 同时处理不同尺寸的条形码
+
+这些算法专门针对条形码的几何特征进行优化。
+
+# Test Strategy:
+使用rotated_开头的测试图像验证几何校正效果，确保各种角度和透视的条形码都能被正确校正。

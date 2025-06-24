@@ -109,7 +109,7 @@ This document provides a detailed reference for interacting with Taskmaster, cov
 *   **Description:** `Ask Taskmaster to show the next available task you can work on, based on status and completed dependencies.`
 *   **Key Parameters/Options:**
     *   `file`: `Path to your Taskmaster 'tasks.json' file. Default relies on auto-detection.` (CLI: `-f, --file <file>`)
-    *   `tag`: `Specify which tag context to use. Defaults to the current active tag.` (CLI: `--tag <name>`)
+    *   `tag`: `Specify which tag context to use. Defaults to the current active tag.` (CLI: `--tag <n>`)
 *   **Usage:** Identify what to work on next according to the plan.
 
 ### 5. Get Task Details (`get_task`)
@@ -259,7 +259,7 @@ This document provides a detailed reference for interacting with Taskmaster, cov
     *   `research`: `Enable research role for more informed subtask generation. Requires appropriate API key.` (CLI: `-r, --research`)
     *   `prompt`: `Optional: Provide extra context for Taskmaster to apply generally during expansion.` (CLI: `-p, --prompt <text>`)
     *   `force`: `Optional: If true, clear existing subtasks before generating new ones for each eligible task. Default is false (append).` (CLI: `--force`)
-    *   `tag`: `Specify which tag context to expand. Defaults to the current active tag.` (CLI: `--tag <name>`)
+    *   `tag`: `Specify which tag context to expand. Defaults to the current active tag.` (CLI: `--tag <n>`)
     *   `file`: `Path to your Taskmaster 'tasks.json' file. Default relies on auto-detection.` (CLI: `-f, --file <file>`)
 *   **Usage:** Useful after initial task generation or complexity analysis to break down multiple tasks at once.
 *   **Important:** This MCP tool makes AI calls and can take up to a minute to complete. Please inform users to hang tight while the operation is in progress.

@@ -1,0 +1,17 @@
+# Task ID: 1
+# Title: 传统光照校正算法实现
+# Status: in-progress
+# Dependencies: None
+# Priority: high
+# Description: 实现Multi-Scale Retinex (MSR)、Single Scale Retinex (SSR)、自适应伽马校正和CLAHE等光照校正算法
+# Details:
+在preprocess目录下扩展现有模块，添加advanced_illumination.py文件，实现四种主要的光照校正算法：
+1. Multi-Scale Retinex (MSR) - 多尺度视网膜增强算法
+2. Single Scale Retinex (SSR) - 单尺度视网膜增强
+3. 自适应伽马校正 - 基于图像统计特性的动态伽马调整
+4. CLAHE增强版 - 对比度限制自适应直方图均衡化
+
+这些算法主要解决光照不均、阴影干扰等问题，提高条形码在复杂光照环境下的识别率。
+
+# Test Strategy:
+使用sample_images中的各种光照条件测试图像验证算法效果，确保在不同光照条件下都能改善图像质量。

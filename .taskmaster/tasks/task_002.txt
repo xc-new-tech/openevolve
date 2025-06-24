@@ -1,0 +1,17 @@
+# Task ID: 2
+# Title: 高级去噪算法扩展
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: 实现非局部均值去噪、双边滤波增强版、维纳滤波器和形态学运算组合等高级去噪技术
+# Details:
+扩展preprocess/denoise.py模块，添加更强大的去噪算法：
+1. 非局部均值去噪(Non-local Means) - 利用图像自相似性的强力去噪
+2. 双边滤波增强版 - 改进的边缘保护滤波
+3. 维纳滤波器 - 频域噪声抑制
+4. 形态学开闭运算组合 - 针对条形码特征的结构化去噪
+
+重点优化噪声环境下的条形码识别效果。
+
+# Test Strategy:
+使用noisy_开头的测试图像验证去噪效果，对比PSNR和SSIM指标，确保去噪的同时保持条形码特征清晰。

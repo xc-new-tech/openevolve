@@ -1,63 +1,132 @@
-Project: OpenEvolve Refactor and Quality Improvement
+# 条形码预处理算法优化项目 PRD
 
-Background:
-OpenEvolve is an open-source evolutionary programming framework that interfaces with LLMs to iteratively improve code solutions. The current codebase is functional but lacks modern DevOps, robust testing, comprehensive documentation, and strict typing. Improving these areas will increase project stability, developer onboarding speed, and community adoption.
+## 项目概述
+基于 OpenEvolve 框架优化条形码图像预处理管道，目标是突破当前 96.7 分的性能瓶颈，达到 98+ 分的解码成功率。
 
-Goals:
-1. Increase code quality and maintainability.
-2. Provide reliable automated testing and continuous integration workflows.
-3. Supply thorough documentation and examples for users and contributors.
-4. Enhance performance of LLM interactions through asynchronous concurrency.
-5. Improve packaging, release, and deployment processes.
+## 当前状态分析
+- 现有系统：条形码预处理管道包含 15 个核心函数
+- 当前性能：96.7 分解码成功率
+- 主要瓶颈：进化算法停滞，代码生成错误率高
+- 技术栈：OpenCV、NumPy、PIL 传统图像处理
 
-Success Metrics:
-• Unit-/integration-test coverage ≥ 80 %.
-• CI pipeline passes on all pushes and pull requests.
-• Documentation site deploys automatically and receives ≥ 500 page views within 3 months of release.
-• Average execution time of standard evaluation example reduced by ≥ 30 %.
+## 目标与成功指标
+### 主要目标
+1. **性能突破**：解码成功率从 96.7% 提升到 98%+
+2. **算法多样性**：引入 6 大类先进预处理技术
+3. **系统稳定性**：减少进化过程中的代码错误率到 10% 以下
 
-Scope & Features:
-1. **Type Annotations & Static Analysis**
-   • Add complete type hints to all public modules.
-   • Integrate mypy in CI.
-2. **Testing Suite Expansion**
-   • Write missing unit tests for controller, prompt sampler, and database modules.
-   • Add integration tests for example pipelines.
-3. **Continuous Integration (CI)**
-   • Configure GitHub Actions to run lint (black, isort, flake8), mypy, and pytest with coverage.
-4. **Documentation Website**
-   • Generate API docs with Sphinx + autodoc.
-   • Host on GitHub Pages and automate deployment.
-5. **Logging & Observability**
-   • Centralize logging using the standard logging library with configurable log levels.
-6. **Code Formatting & Pre-commit Hooks**
-   • Apply black and isort; enforce via pre-commit.
-7. **Performance Optimization**
-   • Refactor LLM calls to leverage asyncio.gather for parallel batch requests.
-8. **Modular Refactor of database.py**
-   • Split >1000-line file into logical sub-modules (models, storage, operations).
-9. **Packaging & Dockerization**
-   • Provide Dockerfile + docker-compose.yml for easy local setup.
-   • Update README with instructions.
-10. **Configuration Validation**
-    • Replace ad-hoc YAML parsing with Pydantic-based config schema.
+### 成功指标
+- 条形码解码成功率：≥ 98%
+- 处理速度：单张图像 < 100ms
+- 算法鲁棒性：在不同噪声、模糊、旋转条件下稳定工作
+- 代码质量：通过所有测试用例，无语法错误
 
-Out of Scope:
-• Large-scale algorithmic changes to evolutionary logic.
-• Paid hosting or cloud deployment services.
+## 技术需求
 
-Milestones & Timeline:
-M1 (Week 1-2): Type hints, mypy, logging.
-M2 (Week 3-4): Test coverage expansion, CI pipeline.
-M3 (Week 5-6): Modular refactor, performance optimization.
-M4 (Week 7-8): Documentation site, packaging, dockerization.
+### 阶段一：进化算法优化（已完成）
+- 启用增量补丁进化 (diff_based_evolution: true)
+- 优化种群规模和迭代策略
+- 调整 LLM 参数减少随机性
+- 提高代码长度限制到 15000 字符
 
-Risks & Mitigations:
-• Refactor may introduce regressions → rely on growing test suite.
-• Async changes might complicate error handling → add extensive logging & retries.
+### 阶段二：传统算法增强
+#### 2.1 光照校正算法
+- Multi-Scale Retinex (MSR) 实现
+- Single Scale Retinex (SSR) 实现  
+- 自适应伽马校正算法
+- CLAHE（对比度限制自适应直方图均衡化）增强
 
-Deliverables:
-• Updated codebase with refactors and performance improvements.
-• Passing CI with ≥ 80 % coverage.
-• Published documentation site.
-• Docker images and deployment guide. 
+#### 2.2 高级去噪算法
+- 非局部均值去噪 (Non-local Means)
+- 双边滤波增强版本
+- 维纳滤波器实现
+- 形态学开闭运算组合
+
+#### 2.3 边缘保护滤波
+- 导向滤波 (Guided Filter)
+- 边缘保护平滑滤波
+- 各向异性扩散滤波
+
+### 阶段三：深度学习增强
+#### 3.1 超分辨率处理
+- Real-ESRGAN 集成用于小尺寸条形码
+- SwinIR 模型集成
+- 轻量级 SRCNN 实现
+
+#### 3.2 深度去噪
+- DnCNN 模型集成
+- FFDNet 可变噪声去噪
+- 自训练去噪模型
+
+### 阶段四：专用算法开发
+#### 4.1 条形码专用算法
+- 方向检测和自动旋转
+- 透视变换校正
+- 条形码区域精确定位
+- 多尺度检测算法
+
+#### 4.2 自适应参数调优
+- 基于图像质量的参数自动选择
+- 多算法串联的最优组合
+- 动态阈值调整
+
+### 阶段五：系统集成与优化
+#### 5.1 管道优化
+- 算法执行顺序优化
+- 并行处理实现
+- 内存使用优化
+- 缓存机制
+
+#### 5.2 评估体系完善
+- 更全面的测试用例
+- 性能基准测试
+- 错误分析和诊断工具
+
+## 技术约束
+- 保持与现有 OpenEvolve 框架兼容
+- 所有新算法必须支持 OpenCV 和 NumPy
+- 深度学习模型需要提供 CPU 版本
+- 单张图像处理时间不超过 100ms
+- 代码必须易于进化算法修改
+
+## 验收标准
+1. **功能验收**
+   - 所有新算法通过单元测试
+   - 集成测试通过率 100%
+   - 与现有管道无冲突
+
+2. **性能验收**  
+   - 解码成功率 ≥ 98%
+   - 处理速度 ≤ 100ms/图像
+   - 内存使用 ≤ 512MB
+
+3. **质量验收**
+   - 代码覆盖率 ≥ 90%
+   - 无严重安全漏洞
+   - 符合 PEP8 编码规范
+
+## 交付物
+1. 增强的预处理算法库（6大类，20+算法）
+2. 优化的管道配置文件
+3. 完整的测试套件
+4. 性能评估报告
+5. 算法使用指南文档
+
+## 风险与缓解
+### 主要风险
+1. **深度学习模型依赖**：缓解方案是提供传统算法备选
+2. **性能开销**：通过算法选择和优化缓解
+3. **进化算法兼容性**：保持模块化设计确保兼容
+
+### 时间规划
+- 阶段二：3-4天（传统算法增强）
+- 阶段三：2-3天（深度学习集成）  
+- 阶段四：2-3天（专用算法开发）
+- 阶段五：1-2天（系统集成优化）
+
+## 技术栈
+- **核心框架**：OpenEvolve, OpenCV, NumPy
+- **深度学习**：PyTorch, BasicSR
+- **图像处理**：PIL, scikit-image
+- **测试框架**：pytest, unittest
+- **性能分析**：cProfile, memory_profiler 

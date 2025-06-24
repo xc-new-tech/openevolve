@@ -28,7 +28,7 @@ def resize_if_needed(image, min_dim=320, max_dim=900):
     scale = 1.0
     if min(h, w) < min_dim:
         scale = min_dim / min(h, w)
-        interp = cv2.INTER_CUBIC
+        interp = cv2.INTER_LINEAR
     elif max(h, w) > max_dim:
         scale = max_dim / max(h, w)
         interp = cv2.INTER_AREA
@@ -41,7 +41,10 @@ def resize_if_needed(image, min_dim=320, max_dim=900):
     return image
 
 def estimate_noise(image):
-    return cv2.Laplacian(image, cv2.CV_64F).std()
+    # Simplified noise estimation using Sobel operator
+    sobelx = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=3)
+    return np.sqrt(np.mean(sobelx**2 + sobely**2))
 
 def adaptive_denoise(image):
     noise = estimate_noise(image)
@@ -55,13 +58,11 @@ def adaptive_denoise(image):
         denoised = cv2.addWeighted(denoised, 0.85, image, 0.15, 0)
         return denoised
     elif noise > 8:
-        # Use bilateral filter for better edge preservation
-        denoised = cv2.bilateralFilter(image, d=7, sigmaColor=48, sigmaSpace=48)
+        # Use a faster denoising method for moderate noise
+        denoised = cv2.fastNlMeansDenoising(image, None, h=10, templateWindowSize=7, searchWindowSize=21)
         # Gentle sharpening
         kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
         denoised = cv2.filter2D(denoised, -1, kernel)
-        # Extra: Blend with original for edge detail
-        denoised = cv2.addWeighted(denoised, 0.9, image, 0.1, 0)
         return denoised
     else:
         return image
@@ -136,10 +137,11 @@ def binarize_with_fallback(image):
             hybrid = cv2.bitwise_or(th, th2)
             if barcode_structure_score(hybrid) > max(score, score2):
                 return hybrid
-        # NEW: If both are poor, try adaptiveThreshold with mean method as last resort
+        # NEW: If both are poor, try a hybrid of Otsu and adaptive mean
         th3 = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 33, 9)
-        if np.sum(th3 == 0) > np.sum(th == 0) * 0.8:  # Only if it gives more black pixels (bars)
-            return th3
+        hybrid = cv2.bitwise_or(th, th3)
+        if barcode_structure_score(hybrid) > max(score, score2):
+            return hybrid
     return th
 
 def estimate_skew_angle(bin_img):
@@ -185,12 +187,12 @@ def estimate_skew_angle(bin_img):
 
 def deskew(image):
     angle = estimate_skew_angle(image)
-    if abs(angle) < 0.7:
+    if abs(angle) < 0.5:
         return image
     (h, w) = image.shape
     center = (w // 2, h // 2)
     rotmat = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated = cv2.warpAffine(image, rotmat, (w, h), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_REPLICATE)
+    rotated = cv2.warpAffine(image, rotmat, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=255)
     return rotated
 
 def is_2d_barcode(bin_img):
@@ -279,13 +281,16 @@ def preprocess_barcode_image(image_path, output_path=None):
 def process_barcode_pipeline(image_path, output_path=None):
     return preprocess_barcode_image(image_path, output_path)
 
-def run_preprocessing(input_dir, output_dir=None):
+from concurrent.futures import ThreadPoolExecutor
+
+def run_preprocessing(input_dir, output_dir=None, max_workers=4):
     """
-    Run preprocessing on all images in a directory
+    Run preprocessing on all images in a directory using parallel processing
 
     Args:
         input_dir: Directory containing barcode images
         output_dir: Directory to save processed images (optional)
+        max_workers: Number of parallel workers
 
     Returns:
         List of processed image paths
@@ -298,15 +303,20 @@ def run_preprocessing(input_dir, output_dir=None):
 
     processed_paths = []
 
-    for filename in os.listdir(input_dir):
+    def process_image(filename):
         if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
             input_path = os.path.join(input_dir, filename)
             output_path = os.path.join(output_dir, f"processed_{filename}") if output_dir else None
             try:
                 process_barcode_pipeline(input_path, output_path)
-                processed_paths.append(output_path if output_path else input_path)
+                return output_path if output_path else input_path
             except Exception as e:
                 print(f"Error processing {filename}: {e}")
+                return None
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        results = executor.map(process_image, os.listdir(input_dir))
+        processed_paths.extend(filter(None, results))
 
     return processed_paths
 
